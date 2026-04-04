@@ -26,6 +26,7 @@ enum ApplicationStatus {
 
 enum Status {
   DRAFT
+  PENDING_REVIEW
   PUBLISHED
 }
 
@@ -46,6 +47,7 @@ model User {
   updatedAt              DateTime   @updatedAt
 
   reviewedApplications   ProfessionalApplication[] @relation("ApplicationReviewer")
+  articles               Article[]
 }
 
 model ProfessionalApplication {
@@ -104,6 +106,8 @@ model Article {
   status     Status          @default(DRAFT)
   categoryId String
   category   ArticleCategory @relation(fields: [categoryId], references: [id])
+  authorId   String?
+  author     User?           @relation(fields: [authorId], references: [id])
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 }

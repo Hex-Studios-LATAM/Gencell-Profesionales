@@ -160,20 +160,21 @@ export default function AdminProductosPage() {
 
   return (
     <main className="p-8">
-      <div className="mb-6">
-        <a href="/admin" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition mb-2">
-           ← Volver al Panel
+      <div className="mb-10 flex flex-col justify-start items-start gap-2">
+        <a href="/admin" className="text-sm font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition mb-3">
+           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+           Volver al Panel
         </a>
-        <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Catálogo de Productos</h1>
       </div>
 
-      {error && <div className="p-3 text-red-700 bg-red-50 border border-red-200 rounded mb-4">{error}</div>}
+      {error && <div className="p-4 bg-red-50 text-red-700 border border-red-100 rounded-xl mb-6 text-sm font-medium">{error}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Formulario */}
-        <div className="lg:col-span-1 bg-white p-6 rounded shadow-sm border border-gray-200 self-start">
-          <h2 className="text-xl font-bold mb-4">{isEditing ? "Editar Producto" : "Nuevo Producto"}</h2>
+        <div className="lg:col-span-1 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 self-start sticky top-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6 tracking-tight">{isEditing ? "Editar Producto" : "Nuevo Producto"}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -235,49 +236,49 @@ export default function AdminProductosPage() {
         </div>
 
         {/* Listado */}
-        <div className="lg:col-span-2 bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
+        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden self-start">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="p-3 font-medium text-gray-600">Nombre / Slug</th>
-                <th className="p-3 font-medium text-gray-600">Categoría / Especialidades</th>
-                <th className="p-3 font-medium text-gray-600">Estado</th>
-                <th className="p-3 font-medium text-gray-600 w-[150px] text-right">Acciones</th>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Nombre / Slug</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Categoría / Especialidades</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Estado</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest w-[160px] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading && products.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={4} className="p-10 text-center text-slate-500 font-medium">Cargando catálogo...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-gray-500">No hay productos</td></tr>
+                <tr><td colSpan={4} className="p-12 text-center text-slate-500 font-medium bg-slate-50/50">No hay productos en el catálogo.</td></tr>
               ) : (
                 products.map(prod => (
-                  <tr key={prod.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="p-3">
-                      <div className="font-medium text-gray-900">{prod.name}</div>
-                      <div className="text-xs text-gray-500">{prod.slug}</div>
+                  <tr key={prod.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition">
+                    <td className="p-5">
+                      <div className="font-bold text-slate-900">{prod.name}</div>
+                      <div className="text-[11px] font-bold tracking-widest text-slate-400 uppercase mt-2">{prod.slug}</div>
                     </td>
-                    <td className="p-3 text-sm text-gray-700">
-                      <div className="font-semibold text-blue-700">{prod.category?.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                    <td className="p-5 text-sm font-semibold text-slate-600">
+                      <div className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-md uppercase tracking-wider border border-indigo-100/50 mb-1">{prod.category?.name}</div>
+                      <div className="text-xs text-slate-500 mt-2 flex flex-wrap gap-1">
                          {prod.specialties.length > 0 
-                           ? prod.specialties.map(s => s.specialty.name).join(', ') 
-                           : 'Universal'}
+                           ? prod.specialties.map(s => <span key={s.specialty.id} className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{s.specialty.name}</span>) 
+                           : <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">Universal</span>}
                       </div>
                     </td>
-                    <td className="p-3">
+                    <td className="p-5">
                        <select 
                          value={prod.status}
                          onChange={(e) => handleStatusChange(prod.id, e.target.value)}
-                         className={`text-xs border rounded p-1 outline-none ${prod.status === 'PUBLISHED' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                         className={`text-xs font-bold uppercase tracking-wider py-1.5 px-2 outline-none cursor-pointer rounded-lg border ${prod.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
                        >
-                         <option value="DRAFT">DRAFT</option>
-                         <option value="PUBLISHED">PUBLISHED</option>
+                         <option value="DRAFT">En Borrador</option>
+                         <option value="PUBLISHED">Publicado</option>
                        </select>
                     </td>
-                    <td className="p-3 text-right">
-                      <button onClick={() => handleEdit(prod)} className="text-blue-600 hover:underline text-sm mr-3">Editar</button>
-                      <button onClick={() => handleDelete(prod.id)} className="text-red-600 hover:underline text-sm">Borrar</button>
+                    <td className="p-5 text-right flex items-center justify-end gap-3 pt-6 h-full">
+                      <button onClick={() => handleEdit(prod)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold bg-indigo-50 px-3 py-1.5 rounded-lg transition">Editar</button>
+                      <button onClick={() => handleDelete(prod.id)} className="text-red-600 hover:text-red-800 text-sm font-bold bg-red-50 px-3 py-1.5 rounded-lg transition">Borrar</button>
                     </td>
                   </tr>
                 ))

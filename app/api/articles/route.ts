@@ -10,7 +10,7 @@ const articleSchema = z.object({
   content: z.string().min(1, 'El contenido es obligatorio'),
   excerpt: z.string().optional(),
   imageUrl: z.string().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT')
+  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).default('DRAFT')
 });
 
 function generateSlug(text: string) {
@@ -25,6 +25,7 @@ function generateSlug(text: string) {
 
 export async function GET(req: Request) {
   try {
+    const session = await auth();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const categoryId = searchParams.get('categoryId');
@@ -33,9 +34,14 @@ export async function GET(req: Request) {
     if (status) where.status = status;
     if (categoryId) where.categoryId = categoryId;
 
+    // Filter by author if user is DOCTOR
+    if (session?.user?.role === 'DOCTOR') {
+       where.authorId = session.user.id;
+    }
+
     const articles = await prisma.article.findMany({
       where,
-      include: { category: true },
+      include: { category: true, author: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -48,7 +54,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'DOCTOR')) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -60,6 +66,12 @@ export async function POST(req: Request) {
     }
 
     const data = result.data;
+    
+    // Doctores no pueden publicar directamente
+    if (session.user.role === 'DOCTOR' && data.status === 'PUBLISHED') {
+       data.status = 'PENDING_REVIEW';
+    }
+
     const finalSlug = data.slug && data.slug.trim() !== '' ? generateSlug(data.slug) : generateSlug(data.title);
 
     // Validar slug unico
@@ -76,7 +88,8 @@ export async function POST(req: Request) {
         content: data.content,
         excerpt: data.excerpt || null,
         imageUrl: data.imageUrl || null,
-        status: data.status
+        status: data.status,
+        authorId: session.user.id
       },
       include: { category: true }
     });

@@ -87,105 +87,101 @@ export default function AdminAprobacionesPage() {
 
   return (
     <main className="p-8">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <a href="/admin" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition mb-2">
-             ← Volver al Panel
+          <a href="/admin" className="text-sm font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition mb-3">
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+             Volver al Panel
           </a>
-          <h1 className="text-3xl font-bold text-gray-900">Aprobaciones de Profesionales</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Aprobaciones de Profesionales</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
            <select 
              value={filter} 
              onChange={e => setFilter(e.target.value)} 
-             className="border p-2 rounded bg-white outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+             className="border border-slate-200 p-2.5 rounded-xl bg-white outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm font-semibold text-slate-700 w-full sm:w-auto"
            >
-             <option value="ALL">Todas</option>
-             <option value="PENDING">Pendientes</option>
-             <option value="APPROVED">Aprobadas</option>
+             <option value="ALL">Mostrar Todas</option>
+             <option value="PENDING">Revisión Pendiente</option>
+             <option value="APPROVED">Ya Aprobadas</option>
              <option value="REJECTED">Rechazadas</option>
            </select>
         </div>
       </div>
 
-      {error && <div className="p-3 text-red-700 bg-red-50 border border-red-200 rounded mb-4">{error}</div>}
+      {error && <div className="p-4 bg-red-50 text-red-700 border border-red-100 rounded-xl mb-6 text-sm font-medium">{error}</div>}
 
-      <div className="bg-white border rounded shadow-sm overflow-x-auto overflow-y-visible">
+      <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-x-auto overflow-y-visible">
         <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
-            <tr className="bg-gray-50 border-b">
-              <th className="p-3 font-medium text-gray-600">Fecha / Revisión</th>
-              <th className="p-3 font-medium text-gray-600">Nombre / Correo / Tel.</th>
-              <th className="p-3 font-medium text-gray-600">Especialidad Escrita / Cédula</th>
-              <th className="p-3 font-medium text-gray-600">Estado / Notas</th>
-              <th className="p-3 font-medium text-gray-600 w-[240px] text-right">Acciones</th>
+            <tr className="bg-slate-50 border-b border-slate-100">
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Fecha / Revisión</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Profesional</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Especialidad Escrita / Cédula</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Estado / Notas</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest w-[240px] text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-gray-500">Cargando...</td></tr>
+              <tr><td colSpan={5} className="p-10 text-center text-slate-500 font-medium">Cargando base médica...</td></tr>
             ) : applications.length === 0 ? (
-              <tr><td colSpan={6} className="p-8 text-center text-gray-500">No hay solicitudes para mostrar.</td></tr>
+              <tr><td colSpan={5} className="p-12 text-center text-slate-500 font-medium bg-slate-50/50">No existen solicitudes bajo este criterio.</td></tr>
             ) : (
               applications.map(app => (
-                <tr key={app.id} className="border-b last:border-0 hover:bg-gray-50 transition">
-                  <td className="p-3 text-sm text-gray-600">
-                    <div>{new Date(app.createdAt).toLocaleDateString()}</div>
+                <tr key={app.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition">
+                  <td className="p-5 text-sm text-slate-600 font-medium">
+                    <div className="font-semibold text-slate-800">{new Date(app.createdAt).toLocaleDateString()}</div>
                     {app.reviewedAt && (
-                        <div className="text-xs text-gray-400 mt-1" title="Fecha de revisión">
+                        <div className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mt-2" title="Fecha de revisión">
                            Rev: {new Date(app.reviewedAt).toLocaleDateString()}
                         </div>
                     )}
                   </td>
-                  <td className="p-3">
-                    <div className="font-medium text-gray-900">{app.name}</div>
-                    <div className="text-xs text-gray-500">{app.email}</div>
-                    <div className="text-xs text-gray-500">{app.phone}</div>
+                  <td className="p-5">
+                    <div className="font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1">{app.name}</div>
+                    <div className="text-xs text-slate-500 font-medium mt-2">{app.email}</div>
+                    <div className="text-xs text-slate-500 font-medium mt-0.5">{app.phone}</div>
                   </td>
-                  <td className="p-3">
-                    <div className="text-sm text-gray-800 font-medium">{app.specialtyText}</div>
-                    <div className="text-xs text-gray-500 font-mono mt-1">Cédula: {app.professionalLicense}</div>
+                  <td className="p-5">
+                    <div className="text-sm font-bold text-indigo-700 bg-indigo-50 inline-block px-2 py-1 rounded border border-indigo-100">{app.specialtyText}</div>
+                    <div className="text-xs font-mono font-bold text-slate-500 mt-3 uppercase tracking-widest border border-slate-200 inline-block px-2 py-0.5 rounded shadow-sm">CÉD {app.professionalLicense}</div>
                   </td>
-                  <td className="p-3 text-sm font-medium">
-                     <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                        app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                        app.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  <td className="p-5 text-sm font-medium">
+                     <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold border ${
+                        app.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        app.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                      }`}>
-                        {app.status}
+                        {app.status === 'PENDING' ? 'EN ESPERA' : app.status === 'APPROVED' ? 'APROBADA' : 'RECHAZADA'}
                      </span>
                      {app.status === 'REJECTED' && app.rejectionReason && (
-                        <div className="text-xs text-red-500 mt-2 bg-red-50 p-1 rounded border border-red-100 w-full max-w-[200px] break-words">
+                        <div className="text-[11px] font-medium text-rose-600 mt-3 bg-rose-50 p-2 rounded-lg border border-rose-100 w-full max-w-[200px] break-words">
                            <strong>Razón:</strong> {app.rejectionReason}
                         </div>
                      )}
-                     {app.notes && (
-                         <div className="text-[10px] text-gray-500 mt-1 max-w-[200px] truncate" title={app.notes}>
-                            Nota: {app.notes}
-                         </div>
-                     )}
                   </td>
-                  <td className="p-3 text-right vertical-middle">
+                  <td className="p-5 text-right vertical-middle">
                     {app.status === 'PENDING' ? (
                       <div className="flex flex-col gap-2 justify-end items-end">
                         <select 
                            value={mappedSpecialties[app.id] || ''}
                            onChange={e => setMappedSpecialties({...mappedSpecialties, [app.id]: e.target.value})}
-                           className="text-xs border p-1 rounded w-full max-w-[180px] outline-none"
+                           className="text-xs border border-slate-200 bg-white font-semibold text-slate-700 p-2 rounded-lg w-full max-w-[200px] outline-none focus:ring-2 focus:ring-indigo-100 shadow-sm"
                         >
-                           <option value="" disabled>Selecciona Especialidad...</option>
+                           <option value="" disabled>1. Enlazar Especialidad...</option>
                            {specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
-                        <div className="flex gap-2">
-                           <button onClick={() => handleApprove(app.id)} className="bg-green-600 text-white px-3 py-1 text-xs rounded hover:bg-green-700 transition">Aprobar</button>
-                           <button onClick={() => handleReject(app.id)} className="border border-red-200 text-red-600 bg-red-50 px-3 py-1 text-xs rounded hover:bg-red-100 transition">Rechazar</button>
+                        <div className="flex gap-2 w-full max-w-[200px]">
+                           <button onClick={() => handleApprove(app.id)} className="flex-1 bg-emerald-600 text-white px-3 py-2 text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition">Aprobar</button>
+                           <button onClick={() => handleReject(app.id)} className="flex-1 border border-rose-200 text-rose-700 bg-white px-3 py-2 text-xs font-bold rounded-lg hover:bg-rose-50 hover:border-rose-300 transition shadow-sm border-b-[3px]">Rechazar</button>
                         </div>
                       </div>
                     ) : app.status === 'APPROVED' && app.activationToken && process.env.NODE_ENV !== 'production' ? (
-                      <a href={`/activar?token=${app.activationToken}`} target="_blank" className="text-blue-500 hover:text-blue-700 text-xs font-medium underline flex items-center justify-end gap-1">
-                          Test Link Activar ↗
+                      <a href={`/activar?token=${app.activationToken}`} target="_blank" className="text-indigo-600 hover:text-indigo-800 text-[11px] font-bold uppercase tracking-wider bg-indigo-50 px-2 py-1.5 rounded flex items-center justify-center gap-1 border border-indigo-100 w-max ml-auto shadow-sm transition">
+                          Activar Test ↗
                       </a>
                     ) : (
-                      <span className="text-gray-400 text-sm">Resuelta</span>
+                      <span className="text-slate-400 text-xs font-bold uppercase tracking-widest mr-2">Resuelta</span>
                     )}
                   </td>
                 </tr>
