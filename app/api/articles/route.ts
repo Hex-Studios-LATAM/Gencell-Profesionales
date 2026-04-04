@@ -1,0 +1,88 @@
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { z } from 'zod';
+import { auth } from '@/auth';
+
+const articleSchema = z.object({
+  title: z.string().min(1, 'El título es obligatorio'),
+  slug: z.string().optional(),
+  categoryId: z.string().min(1, 'La categoría es obligatoria'),
+  content: z.string().min(1, 'El contenido es obligatorio'),
+  excerpt: z.string().optional(),
+  imageUrl: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT')
+});
+
+function generateSlug(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+    const categoryId = searchParams.get('categoryId');
+    
+    const where: any = {};
+    if (status) where.status = status;
+    if (categoryId) where.categoryId = categoryId;
+
+    const articles = await prisma.article.findMany({
+      where,
+      include: { category: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    return NextResponse.json(articles);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error al obtener artículos' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const result = articleSchema.safeParse(body);
+    
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+    }
+
+    const data = result.data;
+    const finalSlug = data.slug && data.slug.trim() !== '' ? generateSlug(data.slug) : generateSlug(data.title);
+
+    // Validar slug unico
+    const existing = await prisma.article.findUnique({ where: { slug: finalSlug } });
+    if (existing) {
+      return NextResponse.json({ error: 'Ya existe un artículo con este slug (URL)' }, { status: 400 });
+    }
+
+    const article = await prisma.article.create({
+      data: {
+        title: data.title,
+        slug: finalSlug,
+        categoryId: data.categoryId,
+        content: data.content,
+        excerpt: data.excerpt || null,
+        imageUrl: data.imageUrl || null,
+        status: data.status
+      },
+      include: { category: true }
+    });
+
+    return NextResponse.json(article, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Error del servidor' }, { status: 500 });
+  }
+}

@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+}
+
+enum UserStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  INACTIVE
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id                     String     @id @default(uuid())
+  name                   String
+  email                  String     @unique
+  professionalLicense    String?    @unique
+  passwordHash           String?
+  mustSetPassword        Boolean    @default(false)
+  passwordSetupToken     String?    @unique
+  passwordSetupExpiresAt DateTime?
+  role                   Role       @default(DOCTOR)
+  status                 UserStatus @default(INACTIVE)
+  specialtyId            String?
+  specialty              Specialty? @relation(fields: [specialtyId], references: [id])
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  reviewedApplications   ProfessionalApplication[] @relation("ApplicationReviewer")
+}
+
+model ProfessionalApplication {
+  id                  String            @id @default(uuid())
+  name                String
+  email               String            @unique
+  phone               String
+  professionalLicense String            @unique
+  specialtyText       String
+  status              ApplicationStatus @default(PENDING)
+  rejectionReason     String?           @db.Text
+  notes               String?           @db.Text
+  reviewedAt          DateTime?
+  reviewedById        String?
+  reviewer            User?             @relation("ApplicationReviewer", fields: [reviewedById], references: [id])
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model Specialty {
+  id          String             @id @default(uuid())
+  name        String             @unique
+  slug        String             @unique
+  description  String?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  products     ProductSpecialty[]
+  users        User[]
+}
+
+model ArticleCategory {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+}
+
+model ProductCategory {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Article {
+  id         String          @id @default(uuid())
+  title      String
+  slug       String          @unique
+  content    String          @db.Text
+  excerpt    String?         @db.Text
+  imageUrl   String?
+  status     Status          @default(DRAFT)
+  categoryId String
+  category   ArticleCategory @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model Product {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique
+  description String             @db.Text
+  imageUrl    String?
+  status      Status             @default(DRAFT)
+  categoryId  String
+  category    ProductCategory    @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  specialties ProductSpecialty[]
+}
+
+model ProductSpecialty {
+  productId   String
+  specialtyId String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@id([productId, specialtyId])
+}
