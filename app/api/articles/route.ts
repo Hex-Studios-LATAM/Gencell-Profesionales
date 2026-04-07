@@ -10,7 +10,10 @@ const articleSchema = z.object({
   content: z.string().min(1, 'El contenido es obligatorio'),
   excerpt: z.string().optional(),
   imageUrl: z.string().optional(),
-  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).default('DRAFT')
+  contentType: z.enum(['ARTICLE', 'NEWS', 'WHITE_PAPER']).default('ARTICLE'),
+  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).default('DRAFT'),
+  audienceType: z.enum(['ALL_DOCTORS', 'BY_SPECIALTY']).default('ALL_DOCTORS'),
+  specialtyIds: z.array(z.string()).optional()
 });
 
 function generateSlug(text: string) {
@@ -33,10 +36,11 @@ export async function GET(req: Request) {
     const where: any = {};
     if (status) where.status = status;
     if (categoryId) where.categoryId = categoryId;
+    const contentType = searchParams.get('contentType');
+    if (contentType) where.contentType = contentType;
 
-    // Filter by author if user is DOCTOR
-    if (session?.user?.role === 'DOCTOR') {
-       where.authorId = session.user.id;
+    if (session?.user?.role !== 'ADMIN') {
+       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const articles = await prisma.article.findMany({
@@ -54,7 +58,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'DOCTOR')) {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -66,11 +70,6 @@ export async function POST(req: Request) {
     }
 
     const data = result.data;
-    
-    // Doctores no pueden publicar directamente
-    if (session.user.role === 'DOCTOR' && data.status === 'PUBLISHED') {
-       data.status = 'PENDING_REVIEW';
-    }
 
     const finalSlug = data.slug && data.slug.trim() !== '' ? generateSlug(data.slug) : generateSlug(data.title);
 
@@ -88,10 +87,15 @@ export async function POST(req: Request) {
         content: data.content,
         excerpt: data.excerpt || null,
         imageUrl: data.imageUrl || null,
+        contentType: data.contentType,
         status: data.status,
-        authorId: session.user.id
+        audienceType: data.audienceType,
+        authorId: session.user.id,
+        specialties: data.audienceType === 'BY_SPECIALTY' && data.specialtyIds ? {
+          create: data.specialtyIds.map(id => ({ specialtyId: id }))
+        } : undefined
       },
-      include: { category: true }
+      include: { category: true, specialties: { include: { specialty: true } } }
     });
 
     return NextResponse.json(article, { status: 201 });

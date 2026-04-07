@@ -25,6 +25,10 @@ export default function AdminProductosPage() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState("");
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -68,6 +72,8 @@ export default function AdminProductosPage() {
       const res = await fetch(`/api/products/${product.id}`);
       if (res.ok) {
         const data = await res.json();
+        setImagePreview(data.imageUrl || "");
+        setImageFile(null);
         setFormData({
           name: data.name,
           slug: data.slug,
@@ -128,10 +134,24 @@ export default function AdminProductosPage() {
     const method = isEditing ? "PATCH" : "POST";
 
     try {
+      let finalImageUrl = formData.imageUrl;
+      
+      if (imageFile) {
+        const upData = new FormData();
+        upData.append("file", imageFile);
+        upData.append("folder", "products");
+        const upRes = await fetch("/api/upload", { method: "POST", body: upData });
+        const upJson = await upRes.json();
+        if (!upRes.ok) throw new Error(upJson.error || "Error al subir la imagen");
+        finalImageUrl = upJson.url;
+      }
+
+      const submitData = { ...formData, imageUrl: finalImageUrl };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
       
       const data = await res.json();
@@ -147,6 +167,8 @@ export default function AdminProductosPage() {
   const resetForm = () => {
     setIsEditing(false);
     setCurrentId("");
+    setImageFile(null);
+    setImagePreview("");
     setFormData({
       name: "",
       slug: "",
@@ -199,8 +221,27 @@ export default function AdminProductosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de Imagen (opcional)</label>
-              <input type="text" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://..." />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Imagen Principal</label>
+              <div className="border border-slate-200 rounded p-3 bg-slate-50 flex flex-col gap-3">
+                 {(imagePreview || imageFile) && (
+                   <div className="relative w-full h-32 bg-slate-200 rounded overflow-hidden shadow-inner flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageFile ? URL.createObjectURL(imageFile) : imagePreview} alt="Preview" className="max-w-full max-h-full object-contain" />
+                      <button type="button" onClick={() => { setImageFile(null); setImagePreview(""); setFormData(f => ({...f, imageUrl: ""})); }} className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 z-10">
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                   </div>
+                 )}
+                 <input 
+                   type="file" 
+                   accept="image/*"
+                   onChange={e => {
+                     if (e.target.files?.[0]) setImageFile(e.target.files[0]);
+                   }} 
+                   className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 outline-none cursor-pointer" 
+                 />
+                 <p className="text-xs text-slate-400">Si no configuras una nueva, se mantendrá la actual.</p>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 text-blue-800 border-t pt-4">Especialidades Relacionadas</label>

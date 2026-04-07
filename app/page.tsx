@@ -1,75 +1,138 @@
-export default function HomePage() {
+"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import Logo from "@/app/components/Logo";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (res?.error) {
+        setError("Credenciales inválidas o cuenta inactiva");
+        setLoading(false);
+      } else {
+        router.push("/admin"); 
+        router.refresh();
+      }
+    } catch (err) {
+      setError("Error de comunicación, por favor intenta de nuevo");
+      setLoading(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col">
-      <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-indigo-200 shadow-md">
-             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-          </div>
-          <span className="text-xl font-bold text-slate-900 tracking-tight">Gencell</span>
-        </div>
-        <div className="flex items-center gap-6 text-sm font-medium">
-          <a href="/productos" className="text-slate-600 hover:text-indigo-600 transition">Productos</a>
-          <a href="/articulos" className="text-slate-600 hover:text-indigo-600 transition">Artículos</a>
-          <div className="w-px h-4 bg-slate-300"></div>
-          <a href="/login" className="text-slate-900 hover:text-indigo-600 transition">Ingresar</a>
-          <a href="/registro-profesional" className="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition">
-            Soy Médico
-          </a>
-        </div>
-      </nav>
-
-      <div className="flex-1 max-w-6xl mx-auto w-full px-6 py-16 flex flex-col items-center justify-center text-center">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold tracking-wide text-xs mb-8">
-           NUEVO PORTAL PROFESIONAL
-        </div>
-        <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6 max-w-4xl">
-          Ciencia, tecnología y respaldo <br className="hidden md:block"/> para tu práctica médica.
-        </h1>
-        <p className="text-lg md:text-xl text-slate-500 mb-10 max-w-2xl leading-relaxed">
-          Accede a equipos médicos de última generación, protocolos validados y un ecosistema de artículos clínicos creados por y para profesionales de la salud.
-        </p>
+    <main className="min-h-screen flex text-slate-900 bg-white">
+      {/* Panel Izquierdo: Formulario */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 xl:p-24 relative z-10 bg-white shadow-[20px_0_40px_-15px_rgba(0,0,0,0.05)]">
         
-        <div className="flex flex-col sm:flex-row gap-4 mb-20 w-full sm:w-auto">
-          <a href="/registro-profesional" className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-medium text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2">
-            Solicitar Acceso Médico
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-          </a>
-          <a href="/productos" className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-medium text-lg hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50 transition flex items-center justify-center">
-            Explorar Catálogo
-          </a>
+        <div className="absolute top-8 left-8 flex items-center gap-2 font-medium text-sm text-slate-500">
+           {/* Welcome area (no back button needed since this is index) */}
+           <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase">Portal Privado</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-left">
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Catálogo Certificado</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Explora productos validados clínicamente, con descripciones técnicas y soporte continuo.</p>
+        <div className="w-full max-w-sm">
+           <div className="flex items-center justify-center mb-8 mx-auto xl:mx-0 relative w-64 h-16 xl:justify-start">
+             <Logo theme="light" variant="portal" className="w-full h-full" />
            </div>
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Publicaciones Médicas</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Mantente al día con artículos redactados por colegas enfocados en salud preventiva y celular.</p>
-           </div>
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 group hover:shadow-md transition">
-              <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Red Confiable</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">Validación rigurosa de identidad y cédula profesional para un ecosistema de alto nivel.</p>
+           
+           <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-center lg:text-left">Bienvenido de nuevo</h1>
+           <p className="text-slate-500 mb-8 text-center lg:text-left">Ingresa a tu portal profesional Gencell.</p>
+
+           {error && <div className="p-3 mb-6 font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg text-sm text-center animate-in fade-in zoom-in-95">{error}</div>}
+
+           <form onSubmit={handleSubmit} className="space-y-5">
+             <div className="space-y-1">
+               <label className="block text-sm font-semibold text-slate-700">Correo Electrónico</label>
+               <input 
+                 type="email" 
+                 required 
+                 value={email} 
+                 onChange={e => setEmail(e.target.value)} 
+                 className="w-full border border-slate-200 p-3 rounded-lg focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition px-4 bg-slate-50 focus:bg-white"
+                 placeholder="dr.nombre@clinica.com"
+               />
+             </div>
+             <div className="space-y-1">
+               <label className="block text-sm font-semibold text-slate-700">Contraseña</label>
+               <input 
+                 type="password" 
+                 required 
+                 value={password} 
+                 onChange={e => setPassword(e.target.value)} 
+                 className="w-full border border-slate-200 p-3 rounded-lg focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition px-4 bg-slate-50 focus:bg-white"
+                 placeholder="••••••••"
+               />
+               <div className="flex justify-end pt-1">
+                  <a href="#" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">¿Olvidaste tu contraseña?</a>
+               </div>
+             </div>
+             
+             <button 
+               type="submit" 
+               disabled={loading}
+               className="w-full bg-indigo-600 text-white font-semibold py-3.5 rounded-lg mt-2 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+             >
+               {loading ? (
+                 <>
+                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                   Conectando...
+                 </>
+               ) : 'Ingresar al Portal'}
+             </button>
+           </form>
+
+           <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+             <p className="text-slate-500 text-sm">¿Eres nuevo en Gencell?</p>
+             <Link href="/registro-profesional" className="inline-block mt-2 font-semibold text-slate-900 hover:text-indigo-600 transition">Solicitar Cuenta de Médico Profesional →</Link>
            </div>
         </div>
       </div>
-{/* 
-        <a href="/admin/aprobaciones" className="">Solicitudes (Aprobaciones)</a>
-        <a href="/admin/especialidades" className="">Especialidades</a>
-        <a href="/admin/productos" className="">Productos Admin</a>
-        <a href="/admin" className="">Área Admin</a> 
-*/}
+
+      {/* Panel Derecho: Imagen / Decoración */}
+      <div className="hidden lg:flex w-1/2 relative bg-slate-900 overflow-hidden items-center justify-center">
+         {/* Gradientes abstractos de fondo biomédico */}
+         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-sky-900 opacity-90 mix-blend-multiply"></div>
+         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500 rounded-full mix-blend-screen filter blur-[150px] opacity-20 animate-pulse"></div>
+         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sky-400 rounded-full mix-blend-screen filter blur-[150px] opacity-20"></div>
+         
+         <div className="relative z-20 max-w-lg p-12 text-white">
+            <h2 className="text-4xl font-bold mb-6 leading-tight">Elevando el estándar en tecnología médica.</h2>
+            <p className="text-indigo-200 text-lg leading-relaxed">Únete a la red exclusiva de profesionales y descubre soluciones con verdadero impacto clínico e investigativo.</p>
+            
+            <div className="mt-12 flex items-center gap-4">
+               <div className="flex -space-x-4">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center overflow-hidden">
+                       <svg className="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    </div>
+                  ))}
+               </div>
+               <span className="text-sm font-medium text-indigo-300">+2,000 médicos confían en nosotros</span>
+            </div>
+         </div>
+         
+         {/* Patrón superpuesto sutil */}
+         <div className="absolute inset-0 opacity-[0.03] select-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+      </div>
     </main>
   );
 }

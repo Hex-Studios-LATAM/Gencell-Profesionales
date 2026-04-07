@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 export type Field = {
   name: string;
   label: string;
-  type: "text" | "textarea";
+  type: "text" | "textarea" | "image";
   required?: boolean;
 };
 
@@ -112,7 +112,7 @@ export default function CrudManager({
             {fields.map(f => (
               <div key={f.name}>
                 <label className="block text-sm font-medium mb-1 text-gray-700">{f.label}</label>
-                {f.type === "text" ? (
+                {f.type === "text" || f.type === "image" ? (
                   <input
                     type="text"
                     required={f.required}
@@ -183,7 +183,11 @@ export default function CrudManager({
                       <tr key={item.id} className="border-b last:border-0 hover:bg-gray-50 transition">
                         {fields.map(f => (
                           <td key={f.name} className="p-3 text-sm text-gray-800 break-words max-w-[200px] truncate">
-                            {item[f.name] || "-"}
+                            {f.type === 'image' && item[f.name] ? (
+                              <img src={item[f.name]} alt="Logo/Img" className="w-10 h-10 object-contain rounded bg-white shadow-sm border p-0.5" />
+                            ) : (
+                              item[f.name] || "-"
+                            )}
                           </td>
                         ))}
                         <td className="p-3 text-right">

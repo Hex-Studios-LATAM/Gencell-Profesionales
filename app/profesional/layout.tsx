@@ -1,76 +1,87 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import Image from "next/image";
 import { SignOutButton } from "../admin/SignOutButton";
+import ProfesionalNav from "./components/ProfesionalNav";
+import Logo from "@/app/components/Logo";
 
 export default async function ProfesionalLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/");
   }
 
   if (session.user.role !== "DOCTOR") {
-    if (session.user.role === "ADMIN") {
-      redirect("/admin");
-    }
-    redirect("/login");
+    if (session.user.role === "ADMIN") redirect("/admin");
+    redirect("/");
   }
 
   if (session.user.status !== "ACTIVE") {
-    redirect("/login?error=inactive");
+    redirect("/?error=inactive");
   }
 
+  const initials = session.user.name
+    ?.split(" ")
+    .slice(0, 2)
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase() ?? "D";
+
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans text-slate-900">
-       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-sm z-20 flex-shrink-0 relative hidden lg:flex">
-          <div className="h-20 flex items-center px-8 border-b border-slate-100">
-             <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center shadow-md shadow-sky-200 mr-3">
-               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-             </div>
-             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Gencell <span className="text-sky-600 font-medium font-mono text-sm tracking-widest ml-1 uppercase">Médicos</span></h2>
+    <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
+
+      {/* ── SIDEBAR DESKTOP ───────────────────────────────────── */}
+      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col flex-shrink-0 z-20 hidden lg:flex">
+
+        {/* Logo / brand */}
+        <div className="h-20 flex items-center px-6 border-b border-slate-100 flex-shrink-0">
+          <Logo theme="light" variant="portal" className="w-40 h-8" />
+        </div>
+
+        {/* Navegación con estado activo — client component */}
+        <ProfesionalNav />
+
+        {/* Footer del sidebar — perfil del doctor */}
+        <div className="p-4 border-t border-slate-100 flex-shrink-0">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 select-none">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-slate-900 truncate leading-tight">
+                Dr. {session.user.name}
+              </p>
+              <p className="text-[11px] text-slate-400 truncate leading-tight">
+                {session.user.email}
+              </p>
+            </div>
           </div>
-          
-          <nav className="flex-1 overflow-y-auto px-4 py-8 space-y-2">
-             <Link href="/profesional" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-sky-50 hover:text-sky-700 transition font-semibold text-sm group">
-               <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-hover:bg-sky-100 group-hover:text-sky-600 flex items-center justify-center transition">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-               </div>
-               Inicio Resumen
-             </Link>
-             
-             <Link href="/profesional/articulos" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-sky-50 hover:text-sky-700 transition font-semibold text-sm group">
-               <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-hover:bg-sky-100 group-hover:text-sky-600 flex items-center justify-center transition relative">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-               </div>
-               Mis Artículos Clínicos
-             </Link>
+          <SignOutButton />
+        </div>
+      </aside>
 
-             <a target="_blank" href="/productos" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-sky-50 hover:text-sky-700 transition font-semibold text-sm group">
-               <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-hover:bg-sky-100 group-hover:text-sky-600 flex items-center justify-center transition">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-               </div>
-               Catálogo Comercial ↗
-             </a>
-          </nav>
+      {/* ── ÁREA PRINCIPAL ────────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto w-full pb-16 lg:pb-0">
+        {children}
+      </main>
 
-          <div className="p-4 border-t border-slate-100 bg-white">
-             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-700 font-bold flex items-center justify-center flex-shrink-0">
-                   {session.user.name?.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-slate-900 truncate">Dr. {session.user.name}</div>
-                  <div className="text-xs text-slate-500 truncate">{session.user.email}</div>
-                </div>
-             </div>
-             <SignOutButton />
-          </div>
-       </aside>
-
-       <main className="flex-1 flex flex-col items-stretch overflow-y-auto relative w-full pb-16 lg:pb-0 shadow-inner">
-          {children}
-       </main>
+      {/* ── SIDEBAR MOBILE — bottom nav ───────────────────────── */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex lg:hidden z-50 h-16 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]">
+        {[
+          { href: "/profesional", exact: true, label: "Inicio", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg> },
+          { href: "/profesional/noticias", exact: false, label: "Noticias", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" /></svg> },
+          { href: "/profesional/publicaciones", exact: false, label: "Publicaciones", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg> },
+          { href: "/profesional/productos", exact: false, label: "Catálogo", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg> },
+        ].map((item) => (
+          <a key={item.href} href={item.href}
+             className="flex-1 flex flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors"
+          >
+            {item.icon}
+            <span className="text-[10px] font-semibold">{item.label}</span>
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }

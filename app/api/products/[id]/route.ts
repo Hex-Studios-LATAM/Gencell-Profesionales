@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { auth } from '@/auth';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').optional(),
@@ -54,6 +56,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     const { id } = await params;
+
+    const existingProduct = await prisma.product.findUnique({ where: { id } });
+    if (!existingProduct) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+
     const body = await req.json();
     const result = productSchema.safeParse(body);
     
@@ -93,6 +99,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       include: { category: true, specialties: { include: { specialty: true } } }
     });
 
+    if (data.imageUrl !== undefined && data.imageUrl !== existingProduct.imageUrl && existingProduct.imageUrl?.startsWith('/uploads/')) {
+      try {
+        const filePath = path.join(process.cwd(), 'public', existingProduct.imageUrl);
+        await fs.unlink(filePath);
+      } catch (e) {
+        console.error('Failed to delete old image:', e);
+      }
+    }
+
     return NextResponse.json(product);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Error del servidor' }, { status: 500 });
@@ -107,8 +122,20 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     const { id } = await params;
+
+    const existingProduct = await prisma.product.findUnique({ where: { id } });
+    if (!existingProduct) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     
     await prisma.product.delete({ where: { id } });
+
+    if (existingProduct.imageUrl?.startsWith('/uploads/')) {
+      try {
+        const filePath = path.join(process.cwd(), 'public', existingProduct.imageUrl);
+        await fs.unlink(filePath);
+      } catch (e) {
+        console.error('Failed to delete product image on delete:', e);
+      }
+    }
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

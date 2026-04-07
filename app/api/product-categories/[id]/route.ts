@@ -5,7 +5,8 @@ import { generateSlug } from '@/lib/utils';
 
 const schema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
-  slug: z.string().optional()
+  slug: z.string().optional(),
+  logoUrl: z.string().optional()
 });
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -36,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const updated = await prisma.productCategory.update({
       where: { id },
-      data: { name: data.name, slug: finalSlug }
+      data: { name: data.name, slug: finalSlug, logoUrl: data.logoUrl }
     });
 
     return NextResponse.json(updated);

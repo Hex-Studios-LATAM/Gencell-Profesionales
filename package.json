@@ -17,8 +17,15 @@
     "zod": "^3.22.4",
     "bcryptjs": "^2.4.3",
     "next-auth": "5.0.0-beta.25",
-    "@tinymce/tinymce-react": "^5.1.1",
+    "@tinymce/tinymce-react": "latest",
+    "tinymce": "latest",
     "sanitize-html": "^2.13.0"
+  },
+  "overrides": {
+    "@tinymce/tinymce-react": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

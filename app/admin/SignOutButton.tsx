@@ -10,7 +10,7 @@ export function SignOutButton() {
     <button 
       onClick={async () => {
          setLoading(true);
-         await signOut({ callbackUrl: "/login" });
+         await signOut({ callbackUrl: "/" });
       }} 
       disabled={loading}
       className="w-full mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-600 border border-transparent hover:border-red-100 hover:bg-red-50 py-2.5 rounded-lg transition disabled:opacity-50"

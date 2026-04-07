@@ -30,6 +30,46 @@ enum Status {
   PUBLISHED
 }
 
+enum AudienceType {
+  ALL_DOCTORS
+  BY_SPECIALTY
+}
+
+enum ContentType {
+  ARTICLE
+  NEWS
+  WHITE_PAPER
+}
+
+enum LeadSource {
+  HOME_CTA
+  PRODUCT_CTA
+  NEWS_CTA
+  WHITE_PAPER_CTA
+  ARTICLE_CTA
+  ELEMENTOR_FORM
+  EXTERNAL_FORM
+}
+
+enum LeadChannel {
+  PORTAL
+  WEBSITE
+}
+
+enum LeadIntent {
+  PERSONALIZED_ATTENTION
+  ORDER_REQUEST
+  GENERAL_INQUIRY
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  IN_PROGRESS
+  CLOSED
+  DISCARDED
+}
+
 model User {
   id                     String     @id @default(uuid())
   name                   String
@@ -46,8 +86,9 @@ model User {
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
-  reviewedApplications   ProfessionalApplication[] @relation("ApplicationReviewer")
-  articles               Article[]
+  reviewedApplications ProfessionalApplication[] @relation("ApplicationReviewer")
+  articles             Article[]
+  leads                Lead[]
 }
 
 model ProfessionalApplication {
@@ -68,14 +109,15 @@ model ProfessionalApplication {
 }
 
 model Specialty {
-  id          String             @id @default(uuid())
-  name        String             @unique
-  slug        String             @unique
-  description  String?
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  products     ProductSpecialty[]
-  users        User[]
+  id                 String             @id @default(uuid())
+  name               String             @unique
+  slug               String             @unique
+  description        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  products           ProductSpecialty[]
+  articleSpecialties ArticleSpecialty[]
+  users              User[]
 }
 
 model ArticleCategory {
@@ -91,25 +133,29 @@ model ProductCategory {
   id        String    @id @default(uuid())
   name      String    @unique
   slug      String    @unique
+  logoUrl   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
 }
 
 model Article {
-  id         String          @id @default(uuid())
-  title      String
-  slug       String          @unique
-  content    String          @db.Text
-  excerpt    String?         @db.Text
-  imageUrl   String?
-  status     Status          @default(DRAFT)
-  categoryId String
-  category   ArticleCategory @relation(fields: [categoryId], references: [id])
-  authorId   String?
-  author     User?           @relation(fields: [authorId], references: [id])
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id           String           @id @default(uuid())
+  title        String
+  slug         String           @unique
+  content      String           @db.Text
+  excerpt      String?          @db.Text
+  imageUrl     String?
+  contentType  ContentType      @default(ARTICLE)
+  status       Status           @default(DRAFT)
+  audienceType AudienceType     @default(ALL_DOCTORS)
+  categoryId   String
+  category     ArticleCategory  @relation(fields: [categoryId], references: [id])
+  authorId     String?
+  author       User?            @relation(fields: [authorId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  specialties  ArticleSpecialty[]
 }
 
 model Product {
@@ -133,4 +179,41 @@ model ProductSpecialty {
   specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
 
   @@id([productId, specialtyId])
+}
+
+model ArticleSpecialty {
+  articleId   String
+  specialtyId String
+  article     Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, specialtyId])
+}
+
+model Lead {
+  id          String      @id @default(uuid())
+  name        String
+  email       String
+  phone       String?
+  message     String?     @db.Text
+  sourceType  LeadSource
+  sourceId    String?
+  sourceLabel String?
+  intent      LeadIntent  @default(PERSONALIZED_ATTENTION)
+  status      LeadStatus  @default(NEW)
+
+  // Canal y trazabilidad de origen
+  channel     LeadChannel @default(PORTAL)
+  websiteName String?
+  formName    String?
+  pageUrl     String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  rawPayload  Json?
+
+  userId    String?
+  user      User?  @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

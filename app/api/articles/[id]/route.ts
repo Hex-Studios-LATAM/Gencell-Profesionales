@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { auth } from '@/auth';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const articleSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio').optional(),
@@ -10,7 +12,10 @@ const articleSchema = z.object({
   content: z.string().min(1, 'El contenido es obligatorio').optional(),
   excerpt: z.string().optional(),
   imageUrl: z.string().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED']).optional()
+  contentType: z.enum(['ARTICLE', 'NEWS', 'WHITE_PAPER']).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'PENDING_REVIEW']).optional(),
+  audienceType: z.enum(['ALL_DOCTORS', 'BY_SPECIALTY']).optional(),
+  specialtyIds: z.array(z.string()).optional()
 });
 
 function generateSlug(text: string) {
@@ -29,13 +34,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Intentar buscar por id, si falla intentar por slug
     let article = await prisma.article.findUnique({
       where: { id },
-      include: { category: true }
+      include: { category: true, specialties: { include: { specialty: true } } }
     });
 
     if (!article) {
       article = await prisma.article.findUnique({
         where: { slug: id },
-        include: { category: true }
+        include: { category: true, specialties: { include: { specialty: true } } }
       });
     }
 
@@ -50,19 +55,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'DOCTOR')) {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const { id } = await params;
     
-    // Si es DOCTOR verificar propiedad
     const existingArticle = await prisma.article.findUnique({ where: { id } });
     if (!existingArticle) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
-    
-    if (session.user.role === 'DOCTOR' && existingArticle.authorId !== session.user.id) {
-       return NextResponse.json({ error: 'No autorizado a modificar este artículo' }, { status: 403 });
-    }
 
     const body = await req.json();
     const result = articleSchema.safeParse(body);
@@ -73,11 +73,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const data = result.data;
     const updateData: any = { ...data };
-
-    // Doctores no pueden publicar directamente
-    if (session.user.role === 'DOCTOR' && data.status === 'PUBLISHED') {
-       updateData.status = 'PENDING_REVIEW';
-    }
+    delete updateData.specialtyIds;
 
     if (data.slug) {
        updateData.slug = generateSlug(data.slug);
@@ -92,11 +88,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
+    if (data.audienceType) {
+       updateData.audienceType = data.audienceType;
+       
+       if (data.audienceType === 'ALL_DOCTORS') {
+         // Si cambia a TODOS, limpiar dependencias de especialidad si existieran
+         updateData.specialties = { deleteMany: {} };
+       }
+    }
+
+    // Hande specialties update if provided and it's BY_SPECIALTY
+    const audienceTypeFinal = data.audienceType || existingArticle.audienceType;
+    if (audienceTypeFinal === 'BY_SPECIALTY' && data.specialtyIds) {
+       updateData.specialties = {
+         deleteMany: {}, // Clear existing
+         create: data.specialtyIds.map(sid => ({ specialtyId: sid }))
+       };
+    }
+
     const article = await prisma.article.update({
       where: { id },
       data: updateData,
-      include: { category: true }
+      include: { category: true, specialties: { include: { specialty: true } } }
     });
+
+    if (data.imageUrl !== undefined && data.imageUrl !== existingArticle.imageUrl && existingArticle.imageUrl?.startsWith('/uploads/')) {
+      try {
+        const filePath = path.join(process.cwd(), 'public', existingArticle.imageUrl);
+        await fs.unlink(filePath);
+      } catch (e) {
+        console.error('Failed to delete old image:', e);
+      }
+    }
 
     return NextResponse.json(article);
   } catch (error: any) {
@@ -107,21 +130,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'DOCTOR')) {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const { id } = await params;
     
-    // Si es DOCTOR verificar propiedad
     const existingArticle = await prisma.article.findUnique({ where: { id } });
     if (!existingArticle) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     
-    if (session.user.role === 'DOCTOR' && existingArticle.authorId !== session.user.id) {
-       return NextResponse.json({ error: 'No autorizado a eliminar este artículo' }, { status: 403 });
-    }
-    
     await prisma.article.delete({ where: { id } });
+
+    if (existingArticle.imageUrl?.startsWith('/uploads/')) {
+      try {
+        const filePath = path.join(process.cwd(), 'public', existingArticle.imageUrl);
+        await fs.unlink(filePath);
+      } catch (e) {
+        console.error('Failed to delete article image on delete:', e);
+      }
+    }
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

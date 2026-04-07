@@ -5,7 +5,8 @@ import { generateSlug } from '@/lib/utils';
 
 const schema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
-  slug: z.string().optional()
+  slug: z.string().optional(),
+  logoUrl: z.string().optional()
 });
 
 export async function GET() {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     if (existing) return NextResponse.json({ error: "El slug ya existe" }, { status: 400 });
 
     const created = await prisma.productCategory.create({
-      data: { name: data.name, slug: finalSlug }
+      data: { name: data.name, slug: finalSlug, logoUrl: data.logoUrl }
     });
 
     return NextResponse.json(created, { status: 201 });

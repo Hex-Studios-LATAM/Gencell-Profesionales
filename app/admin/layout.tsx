@@ -1,10 +1,9 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { SignOutButton } from "./SignOutButton";
-
-// Exportamos un componente de cliente en un archivo aparte o lo hacemos asi para el logout:
-// Para simplificar sin romper, usamos un form directo pero estilizado.
+import Logo from "@/app/components/Logo";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -13,11 +12,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  if (session.user.role !== "ADMIN") {
-    if (session.user.role === "DOCTOR") {
-      redirect("/profesional");
-    }
-    redirect("/login");
+  if (!session?.user || session.user.role !== "ADMIN") {
+    redirect("/");
   }
 
   if (session.user.status !== "ACTIVE") {
@@ -28,11 +24,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
        
        <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-sm z-20 flex-shrink-0 relative hidden lg:flex">
-          <div className="h-20 flex items-center px-8 border-b border-slate-100">
-             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 mr-3">
-               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-             </div>
-             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Gencell <span className="text-indigo-500 font-medium font-mono text-sm tracking-widest ml-1 uppercase">Admin</span></h2>
+          <div className="h-20 flex items-center px-8 border-b border-slate-100 flex-shrink-0">
+             <Logo theme="light" variant="admin" className="w-40 h-8" />
           </div>
           
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
@@ -57,25 +50,41 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
                      Especialidades
                    </Link>
+                   <Link href="/admin/doctores" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
+                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                     Doctores
+                   </Link>
                 </nav>
              </div>
 
              <div>
-                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Contenidos Públicos</p>
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Contenido</p>
                 <nav className="space-y-1">
                    <Link href="/admin/articulos" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20" /></svg>
-                     Gestor de Artículos
+                     Artículos / Noticias / WP
                    </Link>
-                   <Link href="/admin/categorias" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
+                   <Link href="/admin/categorias/articulos" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                     Categorías
+                     Cat. Artículos
                    </Link>
-                   <Link href="/admin/productos" className="flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
-                     <span className="flex items-center gap-3">
-                        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                        Productos Catálogo
-                     </span>
+                   <Link href="/admin/productos" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
+                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                     Productos
+                   </Link>
+                   <Link href="/admin/categorias/productos" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition font-medium text-sm">
+                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                     Cat. Productos
+                   </Link>
+                </nav>
+             </div>
+
+             <div>
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Comercial</p>
+                <nav className="space-y-1">
+                   <Link href="/admin/leads" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition font-medium text-sm group">
+                     <svg className="w-5 h-5 flex-shrink-0 group-hover:text-indigo-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                     Leads
                    </Link>
                 </nav>
              </div>

@@ -8,10 +8,13 @@ type Article = {
   title: string;
   slug: string;
   status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED";
+  contentType: "ARTICLE" | "NEWS" | "WHITE_PAPER";
   categoryId: string;
   category: { id: string; name: string };
   author?: { name: string; email: string };
   createdAt: string;
+  audienceType: "ALL_DOCTORS" | "BY_SPECIALTY";
+  specialties?: Array<{ specialtyId: string, specialty?: { name: string } }>;
 };
 
 type Category = {
@@ -28,6 +31,11 @@ export default function AdminArticulosPage() {
   // State for form
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState("");
+  const [specialties, setSpecialties] = useState<{ id: string; name: string }[]>([]);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -35,21 +43,26 @@ export default function AdminArticulosPage() {
     excerpt: "",
     content: "",
     imageUrl: "",
-    status: "DRAFT" as "DRAFT" | "PENDING_REVIEW" | "PUBLISHED"
+    contentType: "ARTICLE" as "ARTICLE" | "NEWS" | "WHITE_PAPER",
+    status: "DRAFT" as "DRAFT" | "PENDING_REVIEW" | "PUBLISHED",
+    audienceType: "ALL_DOCTORS",
+    specialtyIds: [] as string[]
   });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [artRes, catRes] = await Promise.all([
+      const [artRes, catRes, specRes] = await Promise.all([
         fetch("/api/articles"),
-        fetch("/api/article-categories")
+        fetch("/api/article-categories"),
+        fetch("/api/specialties")
       ]);
       
-      if (!artRes.ok || !catRes.ok) throw new Error("Error cargando datos");
+      if (!artRes.ok || !catRes.ok || !specRes.ok) throw new Error("Error cargando datos");
       
       setArticles(await artRes.json());
       setCategories(await catRes.json());
+      setSpecialties(await specRes.json());
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -70,6 +83,8 @@ export default function AdminArticulosPage() {
       const res = await fetch(`/api/articles/${article.id}`);
       if (res.ok) {
         const data = await res.json();
+        setImagePreview(data.imageUrl || "");
+        setImageFile(null);
         setFormData({
           title: data.title,
           slug: data.slug,
@@ -77,7 +92,10 @@ export default function AdminArticulosPage() {
           excerpt: data.excerpt || "",
           content: data.content,
           imageUrl: data.imageUrl || "",
-          status: data.status
+          contentType: data.contentType || "ARTICLE",
+          status: data.status,
+          audienceType: data.audienceType || "ALL_DOCTORS",
+          specialtyIds: data.specialties?.map((s: any) => s.specialtyId) || []
         });
       }
     } catch (e) {
@@ -117,15 +135,33 @@ export default function AdminArticulosPage() {
        alert("Selecciona una categoría");
        return;
     }
+    if (formData.audienceType === "BY_SPECIALTY" && formData.specialtyIds.length === 0) {
+       alert("Debes seleccionar al menos una especialidad");
+       return;
+    }
     
     const url = isEditing ? `/api/articles/${currentId}` : "/api/articles";
     const method = isEditing ? "PATCH" : "POST";
 
     try {
+      let finalImageUrl = formData.imageUrl;
+      
+      if (imageFile) {
+        const upData = new FormData();
+        upData.append("file", imageFile);
+        upData.append("folder", "articles");
+        const upRes = await fetch("/api/upload", { method: "POST", body: upData });
+        const upJson = await upRes.json();
+        if (!upRes.ok) throw new Error(upJson.error || "Error al subir la imagen");
+        finalImageUrl = upJson.url;
+      }
+
+      const submitData = { ...formData, imageUrl: finalImageUrl };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
       
       const data = await res.json();
@@ -141,6 +177,8 @@ export default function AdminArticulosPage() {
   const resetForm = () => {
     setIsEditing(false);
     setCurrentId("");
+    setImageFile(null);
+    setImagePreview("");
     setFormData({
       title: "",
       slug: "",
@@ -148,7 +186,10 @@ export default function AdminArticulosPage() {
       excerpt: "",
       content: "",
       imageUrl: "",
-      status: "DRAFT"
+      contentType: "ARTICLE",
+      status: "DRAFT",
+      audienceType: "ALL_DOCTORS",
+      specialtyIds: []
     });
   };
 
@@ -179,12 +220,50 @@ export default function AdminArticulosPage() {
               <input type="text" value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="autogenerado" />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Contenido</label>
+              <select value={formData.contentType} onChange={e => setFormData({...formData, contentType: e.target.value as any})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                <option value="ARTICLE">Artículo Clínico</option>
+                <option value="NEWS">Noticia</option>
+                <option value="WHITE_PAPER">White Paper</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
               <select required value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                 <option value="" disabled>Seleccionar...</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Alcance / Audiencia</label>
+              <select value={formData.audienceType} onChange={e => setFormData({...formData, audienceType: e.target.value as any, specialtyIds: e.target.value === 'ALL_DOCTORS' ? [] : formData.specialtyIds})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                <option value="ALL_DOCTORS">Todos los Doctores (Global)</option>
+                <option value="BY_SPECIALTY">Solo Especialidades Específicas</option>
+              </select>
+            </div>
+            
+            {formData.audienceType === "BY_SPECIALTY" && (
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                <label className="block text-sm font-bold text-slate-700 mb-3">Especialidades Relacionadas</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
+                  {specialties.map(spec => (
+                    <label key={spec.id} className="flex items-center space-x-2 bg-white p-2 border border-slate-100 rounded shadow-sm hover:border-indigo-200 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.specialtyIds.includes(spec.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setFormData({...formData, specialtyIds: [...formData.specialtyIds, spec.id]});
+                          else setFormData({...formData, specialtyIds: formData.specialtyIds.filter(id => id !== spec.id)});
+                        }}
+                        className="rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-slate-700">{spec.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
               <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
@@ -194,8 +273,27 @@ export default function AdminArticulosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de Imagen (opcional)</label>
-              <input type="text" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://..." />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Imagen Principal</label>
+              <div className="border border-slate-200 rounded p-3 bg-slate-50 flex flex-col gap-3">
+                 {(imagePreview || imageFile) && (
+                   <div className="relative w-full h-32 bg-slate-200 rounded overflow-hidden shadow-inner">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageFile ? URL.createObjectURL(imageFile) : imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => { setImageFile(null); setImagePreview(""); setFormData(f => ({...f, imageUrl: ""})); }} className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700">
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                   </div>
+                 )}
+                 <input 
+                   type="file" 
+                   accept="image/*"
+                   onChange={e => {
+                     if (e.target.files?.[0]) setImageFile(e.target.files[0]);
+                   }} 
+                   className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 outline-none cursor-pointer" 
+                 />
+                 <p className="text-xs text-slate-400">Si no configuras una nueva, se mantendrá la actual.</p>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Resumen (Excerpt)</label>
@@ -205,7 +303,7 @@ export default function AdminArticulosPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Contenido (Editor Visual)</label>
               <div className="border rounded overflow-hidden shadow-sm">
                  <Editor
-                   apiKey="no-api-key"
+                   apiKey="jljswxin8d31mrxn7msku5gpgc57w2dlkk2rvy9ikzlbe0ht"
                    value={formData.content}
                    onEditorChange={(content) => setFormData({...formData, content})}
                    init={{

@@ -95,7 +95,7 @@ function ActivationForm() {
         </div>
         <h2 className="text-3xl font-extrabold mb-4 text-slate-900 tracking-tight">¡Cuenta Activada!</h2>
         <p className="text-lg text-slate-600 mb-8 font-medium">Tu perfil profesional y contraseña están configurados correctamente.</p>
-        <Link href="/login" className="block w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-200">Acceder Ahora</Link>
+        <Link href="/" className="block w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-200">Acceder Ahora</Link>
       </div>
     );
   }

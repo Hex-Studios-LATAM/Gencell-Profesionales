@@ -3,7 +3,8 @@ import CrudManager, { Field } from "../../components/CrudManager";
 export default function AdminProductosCategoriasPage() {
   const fields: Field[] = [
     { name: "name", label: "Nombre", type: "text", required: true },
-    { name: "slug", label: "Slug", type: "text", required: false }
+    { name: "slug", label: "Slug", type: "text", required: false },
+    { name: "logoUrl", label: "Logo URL", type: "image", required: false }
   ];
 
   return (
