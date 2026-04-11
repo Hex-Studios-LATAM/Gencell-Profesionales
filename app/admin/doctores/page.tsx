@@ -49,6 +49,22 @@ export default function AdminDoctoresPage() {
     }
   };
 
+  const handleEditCedula = async (id: string, currentCedula: string) => {
+    const newCedula = prompt("Ingrese nueva cédula profesional", currentCedula);
+    if (newCedula === null) return;
+    try {
+      const res = await fetch(`/api/admin/doctores/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ professionalLicense: newCedula })
+      });
+      if (!res.ok) throw new Error("Error al actualizar la cédula");
+      fetchData();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
   return (
     <main className="p-8">
       <div className="mb-10 flex flex-col justify-start items-start gap-2">
@@ -86,7 +102,10 @@ export default function AdminDoctoresPage() {
                   </td>
                   <td className="p-5">
                     <div className="text-sm font-bold text-slate-700">{doc.specialty?.name || "Sin especialidad homologada"}</div>
-                    <div className="text-xs font-medium text-slate-400 mt-1">Cédula: {doc.professionalLicense || "N/A"}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="text-xs font-medium text-slate-400">Cédula: {doc.professionalLicense || "N/A"}</div>
+                      <button onClick={() => handleEditCedula(doc.id, doc.professionalLicense || "")} className="text-[10px] text-indigo-600 font-semibold hover:underline">Editar</button>
+                    </div>
                   </td>
                   <td className="p-5">
                     <div className="text-sm font-semibold text-slate-500">{new Date(doc.createdAt).toLocaleDateString()}</div>

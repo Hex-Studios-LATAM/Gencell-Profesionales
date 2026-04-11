@@ -24,6 +24,16 @@ enum ApplicationStatus {
   REJECTED
 }
 
+enum ProfileChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProfileChangeField {
+  NAME_EDIT
+}
+
 enum Status {
   DRAFT
   PENDING_REVIEW
@@ -81,6 +91,8 @@ model User {
   passwordSetupExpiresAt DateTime?
   role                   Role       @default(DOCTOR)
   status                 UserStatus @default(INACTIVE)
+  phone                  String?
+  profileImage           String?
   specialtyId            String?
   specialty              Specialty? @relation(fields: [specialtyId], references: [id])
   createdAt              DateTime   @default(now())
@@ -89,6 +101,8 @@ model User {
   reviewedApplications ProfessionalApplication[] @relation("ApplicationReviewer")
   articles             Article[]
   leads                Lead[]
+  profileChangeRequests  ProfileChangeRequest[]
+  reviewedProfileChanges ProfileChangeRequest[] @relation("ProfileChangeReviewer")
 }
 
 model ProfessionalApplication {
@@ -216,4 +230,20 @@ model Lead {
   user      User?  @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ProfileChangeRequest {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id])
+  fieldType       ProfileChangeField  @default(NAME_EDIT)
+  currentValue    String
+  requestedValue  String
+  status          ProfileChangeStatus @default(PENDING)
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewer        User?               @relation("ProfileChangeReviewer", fields: [reviewedById], references: [id])
+  rejectionReason String?             @db.Text
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }

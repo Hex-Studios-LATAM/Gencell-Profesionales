@@ -11,15 +11,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   try {
-    const { status } = await req.json();
+    const { status, professionalLicense } = await req.json();
 
-    if (!status || !["ACTIVE", "INACTIVE", "PENDING_ACTIVATION"].includes(status)) {
-      return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
+    const updateData: any = {};
+    if (status && ["ACTIVE", "INACTIVE", "PENDING_ACTIVATION"].includes(status)) {
+      updateData.status = status;
+    }
+    if (professionalLicense !== undefined) {
+      updateData.professionalLicense = professionalLicense;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
     }
 
     const updated = await prisma.user.update({
       where: { id },
-      data: { status }
+      data: updateData
     });
 
     return NextResponse.json(updated);

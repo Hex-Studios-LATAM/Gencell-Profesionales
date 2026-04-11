@@ -78,7 +78,7 @@ export default function RegistroProfesionalPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1.5 sm:col-span-2">
               <label className="block text-sm font-semibold text-slate-700">Nombre Completo</label>
-              <input required type="text" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="Dr. Nombre Apellidos" />
+              <input required type="text" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="Nombre Apellidos" />
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-slate-700">Correo Electrónico</label>

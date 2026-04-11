@@ -49,9 +49,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     session({ session, token }) {
       if (session.user) {
-         session.user.id = token.id as string;
-         session.user.role = token.role as string;
-         session.user.status = token.status as string;
+         session.user.id = (token.sub ?? token.id) as string;
+         session.user.role = token.role as typeof session.user.role;
+         session.user.status = token.status as typeof session.user.status;
       }
       return session;
     }

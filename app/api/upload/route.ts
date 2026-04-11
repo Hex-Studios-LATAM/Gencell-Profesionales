@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || !['ADMIN', 'DOCTOR'].includes(session.user.role as string)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

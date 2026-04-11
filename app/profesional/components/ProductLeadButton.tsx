@@ -32,18 +32,15 @@ export default function ProductLeadButton({ productId, productSlug, productName,
   }
 
   return (
-    <div className="mt-auto pt-4 border-t border-slate-100 grid grid-cols-2 gap-2">
-      <a
-        href={`/profesional/productos/${productSlug}`}
-        className="text-center text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg py-2 hover:bg-slate-50 hover:border-slate-300 transition-all duration-150"
-      >
-        Ver detalle
-      </a>
+    <div className="mt-auto pt-4 border-t border-slate-100">
       <button
         onClick={() => setOpen(true)}
-        className="text-center text-xs font-bold text-white bg-blue-700 rounded-lg py-2 hover:bg-blue-800 transition-all duration-150"
+        className="w-full text-center text-xs font-bold text-white bg-blue-700 rounded-lg py-2.5 hover:bg-blue-800 transition-all duration-200 flex items-center justify-center gap-2"
       >
-        Solicitar →
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        Solicitar información
       </button>
     </div>
   );

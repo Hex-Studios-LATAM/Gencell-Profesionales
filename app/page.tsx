@@ -50,8 +50,15 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-sm">
-           <div className="flex items-center justify-center mb-8 mx-auto xl:mx-0 relative w-64 h-16 xl:justify-start">
-             <Logo theme="light" variant="portal" className="w-full h-full" />
+           {/* ── Bloque de marca ─────────────────────────────── */}
+           <div className="mb-10">
+             <Logo theme="light" variant="default" size="lg" className="mb-3" />
+             <div className="flex items-center gap-2">
+               <span className="h-px flex-1 bg-gradient-to-r from-blue-200 to-transparent" />
+               <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-blue-600">
+                 Portal Médico
+               </span>
+             </div>
            </div>
            
            <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-center lg:text-left">Bienvenido de nuevo</h1>

@@ -1,9 +1,14 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import Image from "next/image";
+import prisma from "@/lib/prisma";
 import { SignOutButton } from "../admin/SignOutButton";
 import ProfesionalNav from "./components/ProfesionalNav";
 import Logo from "@/app/components/Logo";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Portal Médico",
+};
 
 export default async function ProfesionalLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -28,6 +33,13 @@ export default async function ProfesionalLayout({ children }: { children: React.
     .join("")
     .toUpperCase() ?? "D";
 
+  // Fetch profile image from DB (session doesn't include it)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { profileImage: true },
+  });
+  const profileImage = dbUser?.profileImage || null;
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
 
@@ -35,8 +47,8 @@ export default async function ProfesionalLayout({ children }: { children: React.
       <aside className="w-64 bg-white border-r border-slate-100 flex flex-col flex-shrink-0 z-20 hidden lg:flex">
 
         {/* Logo / brand */}
-        <div className="h-20 flex items-center px-6 border-b border-slate-100 flex-shrink-0">
-          <Logo theme="light" variant="portal" className="w-40 h-8" />
+        <div className="h-24 flex flex-col justify-center px-6 border-b border-slate-100 flex-shrink-0 gap-1">
+          <Logo theme="light" variant="portal" size="md" />
         </div>
 
         {/* Navegación con estado activo — client component */}
@@ -45,8 +57,13 @@ export default async function ProfesionalLayout({ children }: { children: React.
         {/* Footer del sidebar — perfil del doctor */}
         <div className="p-4 border-t border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 select-none">
-              {initials}
+            <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 select-none overflow-hidden">
+              {profileImage ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={profileImage} alt="" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold text-slate-900 truncate leading-tight">
