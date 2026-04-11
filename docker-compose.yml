@@ -12,5 +12,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  app:
+    build: .
+    container_name: gencell-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:123456@db:5432/gencell
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: supersecret
+      NODE_ENV: production
+      AUTH_TRUST_HOST: true
+    depends_on:
+      - db
+
 volumes:
   postgres_data:
