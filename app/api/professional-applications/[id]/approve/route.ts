@@ -53,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
              email: normalizedEmail,
              professionalLicense: normalizedLicense,
              role: 'DOCTOR',
-             status: 'PENDING_ACTIVATION',
+             status: 'ACTIVE',
              specialtyId: specialtyId,
              mustSetPassword: true,
              passwordSetupToken: token,

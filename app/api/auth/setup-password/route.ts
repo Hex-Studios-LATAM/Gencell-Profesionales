@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'El token ha expirado. Contacta a soporte.' }, { status: 400 });
     }
 
-    if (user.status !== 'PENDING_ACTIVATION' || !user.mustSetPassword) {
+    if (!user.mustSetPassword) {
       return NextResponse.json({ error: 'La cuenta no requiere activación' }, { status: 400 });
     }
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'El token ha expirado' }, { status: 400 });
     }
 
-    if (user.status !== 'PENDING_ACTIVATION' || !user.mustSetPassword) {
+    if (!user.mustSetPassword) {
       return NextResponse.json({ error: 'La cuenta no requiere activación' }, { status: 400 });
     }
 
