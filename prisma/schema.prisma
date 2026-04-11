@@ -51,33 +51,12 @@ enum ContentType {
   WHITE_PAPER
 }
 
-enum LeadSource {
-  HOME_CTA
-  PRODUCT_CTA
-  NEWS_CTA
-  WHITE_PAPER_CTA
-  ARTICLE_CTA
-  ELEMENTOR_FORM
-  EXTERNAL_FORM
-}
-
-enum LeadChannel {
-  PORTAL
-  WEBSITE
-}
-
-enum LeadIntent {
-  PERSONALIZED_ATTENTION
-  ORDER_REQUEST
-  GENERAL_INQUIRY
-}
-
 enum LeadStatus {
-  NEW
-  CONTACTED
-  IN_PROGRESS
-  CLOSED
-  DISCARDED
+  NUEVO
+  CONTACTADO
+  EN_PROCESO
+  CERRADO
+  DESCARTADO
 }
 
 model User {
@@ -100,7 +79,6 @@ model User {
 
   reviewedApplications ProfessionalApplication[] @relation("ApplicationReviewer")
   articles             Article[]
-  leads                Lead[]
   profileChangeRequests  ProfileChangeRequest[]
   reviewedProfileChanges ProfileChangeRequest[] @relation("ProfileChangeReviewer")
 }
@@ -204,32 +182,26 @@ model ArticleSpecialty {
   @@id([articleId, specialtyId])
 }
 
-model Lead {
-  id          String      @id @default(uuid())
-  name        String
-  email       String
-  phone       String?
-  message     String?     @db.Text
-  sourceType  LeadSource
-  sourceId    String?
-  sourceLabel String?
-  intent      LeadIntent  @default(PERSONALIZED_ATTENTION)
-  status      LeadStatus  @default(NEW)
-
-  // Canal y trazabilidad de origen
-  channel     LeadChannel @default(PORTAL)
-  websiteName String?
-  formName    String?
-  pageUrl     String?
-  utmSource   String?
-  utmMedium   String?
-  utmCampaign String?
-  rawPayload  Json?
-
-  userId    String?
-  user      User?  @relation(fields: [userId], references: [id])
+model LeadOrigin {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  leads     Lead[]
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  nombre    String
+  cedula    String
+  email     String
+  telefono  String
+  status    LeadStatus @default(NUEVO)
+  originId  String
+  origin    LeadOrigin @relation(fields: [originId], references: [id])
+  createdAt DateTime   @default(now())
 }
 
 model ProfileChangeRequest {

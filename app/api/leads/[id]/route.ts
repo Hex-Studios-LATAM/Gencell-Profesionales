@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 
 const patchSchema = z.object({
-  status: z.enum(['NEW', 'CONTACTED', 'IN_PROGRESS', 'CLOSED', 'DISCARDED']).optional(),
+  status: z.enum(['NUEVO', 'CONTACTADO', 'EN_PROCESO', 'CERRADO', 'DESCARTADO']).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -51,8 +51,12 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm">
            {/* ── Bloque de marca ─────────────────────────────── */}
-           <div className="mb-10">
-             <Logo theme="light" variant="default" size="lg" className="mb-3" />
+           <div className="mb-10 text-center lg:text-left">
+             <img 
+               src="/assets/logos/logo-black.svg" 
+               alt="Gencell" 
+               className="h-10 w-auto mb-6 inline-block lg:block"
+             />
              <div className="flex items-center gap-2">
                <span className="h-px flex-1 bg-gradient-to-r from-blue-200 to-transparent" />
                <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-blue-600">
