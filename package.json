@@ -27,7 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/bcryptjs": "^2.4.6",
-    "@types/react-quill": "^2.0.14",
+    "@types/react-quill": "latest",
     "@types/sanitize-html": "^2.11.0",
     "eslint": "^9",
     "eslint-config-next": "^15.2.1",
