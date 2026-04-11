@@ -41,7 +41,10 @@ export async function POST(req: Request) {
       data = Object.fromEntries(params.entries());
     }
 
-    console.log("Body recibido completo:", data);
+    console.log("--- DEBUG WEBHOOK START ---");
+    console.log("HEADERS:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+    console.log("BODY DATA:", data);
+    console.log("--- DEBUG WEBHOOK END ---");
 
     // ── 3. Extraer campos (mapeo flexible español/inglés/mayus) ──────
     const nombre   = (data.nombre || data.Nombre || data['Nombre '] || data.name || data.full_name || '').trim();
@@ -49,11 +52,25 @@ export async function POST(req: Request) {
     const email    = (data.email || data.Email || data['Correo Electrónico'] || data.correo || '').trim();
     const telefono = (data.telefono || data.Telefono || data['Teléfono'] || data.phone || data.tel || data.whatsapp || '').trim();
     
-    // Extracción exhaustiva de URL
-    let pageUrl = (data._url || data.url || data.page_url || data.referer || data.form_url || '').trim();
+    // Extracción agresiva MULTICAPA de URL
+    let pageUrl = "";
+    
+    // 1. Buscar llaves exactas
+    pageUrl = (data._url || data.url || data.page_url || data.referer || data.form_url || '').trim();
+    
+    // 2. Búsqueda de llave parcial si sigue vacío
     if (!pageUrl) {
-      pageUrl = (req.headers.get('referer') || '').trim();
+      const urlKey = Object.keys(data).find(key => key.toLowerCase().includes('url'));
+      if (urlKey) {
+        pageUrl = String(data[urlKey]).trim();
+      }
     }
+    
+    // 3. Fallback a headers
+    if (!pageUrl) {
+      pageUrl = (req.headers.get('referer') || req.headers.get('origin') || req.headers.get('x-forwarded-for-referrer') || '').trim();
+    }
+    
     pageUrl = pageUrl || '(URL no capturada)';
 
     console.log("Datos extraídos:", { nombre, cedula, email, telefono, pageUrl });
