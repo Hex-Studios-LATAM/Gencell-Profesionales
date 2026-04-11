@@ -22,6 +22,14 @@ Construir una app web para profesionales de la salud con dos áreas:
 - Prisma 6 ya funciona
 - Prisma Studio ya abre
 
+## Seguridad y Persistencia (VPS y Docker)
+- **Persistencia de BD:** Usar explícitamente el volumen nombrado `postgres_data` montado en `/var/lib/postgresql/data` dentro de `docker-compose.yml` para evitar barrido de datos al regenerar contenedores.
+- **PELIGRO CRÍTICO:** ESTÁ ESTRICTAMENTE PROHIBIDO ejecutar `npx prisma db push` en entornos de producción o VPS. Este comando puede resetear tablas silenciosamente y borrar datos reales de doctores y leads.
+
+## Flujo de Despliegue y Arquitectura
+- **Locales:** Puedes experimentar estructurando la base de datos con `npx prisma db push` de forma aislada, o crear migraciones nuevas con `npx prisma migrate dev --name <nombre>`.
+- **Producción:** Se utiliza **SIEMPRE** el comando `npm run db:migrate:prod` (que ejecuta `npx prisma migrate deploy`). Este comando aplica las migraciones de forma segura al levantar el contenedor de la aplicación.
+
 ## Principios
 - Navegación extremadamente simple
 - Admin primero funcional, luego refinamiento visual

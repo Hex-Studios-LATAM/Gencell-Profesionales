@@ -41,12 +41,20 @@ export async function POST(req: Request) {
       data = Object.fromEntries(params.entries());
     }
 
+    console.log("Body recibido completo:", data);
+
     // ── 3. Extraer campos (mapeo flexible español/inglés/mayus) ──────
     const nombre   = (data.nombre || data.Nombre || data['Nombre '] || data.name || data.full_name || '').trim();
     const cedula   = (data.cedula || data.Cedula || data['Cédula Profesional'] || data.cedula_profesional || data.license || '').trim();
     const email    = (data.email || data.Email || data['Correo Electrónico'] || data.correo || '').trim();
     const telefono = (data.telefono || data.Telefono || data['Teléfono'] || data.phone || data.tel || data.whatsapp || '').trim();
-    const pageUrl  = (data._url || data.url || data.page_url || data.referrer || '').trim() || null;
+    
+    // Extracción exhaustiva de URL
+    let pageUrl = (data._url || data.url || data.page_url || data.referer || data.form_url || '').trim();
+    if (!pageUrl) {
+      pageUrl = (req.headers.get('referer') || '').trim();
+    }
+    pageUrl = pageUrl || '(URL no capturada)';
 
     console.log("Datos extraídos:", { nombre, cedula, email, telefono, pageUrl });
 
