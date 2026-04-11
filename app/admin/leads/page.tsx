@@ -9,6 +9,7 @@ type Lead = {
   cedula: string;
   email: string;
   telefono: string;
+  pageUrl?: string;
   status: string;
   createdAt: string;
   origin: { id: string; name: string };
@@ -370,6 +371,13 @@ export default function AdminLeadsPage() {
                       <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-200">
                         {lead.origin?.name || "—"}
                       </span>
+                      {lead.pageUrl && (
+                        <a href={lead.pageUrl} target="_blank" rel="noopener noreferrer"
+                          className="block text-[10px] font-medium text-indigo-400 hover:text-indigo-600 mt-1 truncate max-w-[180px] transition"
+                          title={lead.pageUrl}>
+                          ↗ Ver página
+                        </a>
+                      )}
                     </td>
                     <td className="p-5" onClick={e => e.stopPropagation()}>
                       <select

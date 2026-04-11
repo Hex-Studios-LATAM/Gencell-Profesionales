@@ -198,6 +198,7 @@ model Lead {
   cedula    String
   email     String
   telefono  String
+  pageUrl   String?
   status    LeadStatus @default(NUEVO)
   originId  String
   origin    LeadOrigin @relation(fields: [originId], references: [id])

@@ -46,8 +46,9 @@ export async function POST(req: Request) {
     const cedula   = (data.cedula || data.Cedula || data['Cédula Profesional'] || data.cedula_profesional || data.license || '').trim();
     const email    = (data.email || data.Email || data['Correo Electrónico'] || data.correo || '').trim();
     const telefono = (data.telefono || data.Telefono || data['Teléfono'] || data.phone || data.tel || data.whatsapp || '').trim();
+    const pageUrl  = (data._url || data.url || data.page_url || data.referrer || '').trim() || null;
 
-    console.log("Datos extraídos:", { nombre, cedula, email, telefono });
+    console.log("Datos extraídos:", { nombre, cedula, email, telefono, pageUrl });
 
     // ── 4. Validar campos requeridos ─────────────────────────────────
     const missing: string[] = [];
@@ -70,12 +71,14 @@ export async function POST(req: Request) {
         cedula,
         email,
         telefono,
+        pageUrl,
         originId: origin.id,
       },
     });
 
-    console.log(`[Webhook Leads] Lead creado: ${lead.id} — ${email} — Origen: ${origin.name}`);
-    return NextResponse.json({ success: true, message: 'Lead creado', leadId: lead.id }, { status: 201 });
+    console.log(`[Webhook Leads] Lead creado: ${lead.id} — ${email} — Origen: ${origin.name} — URL: ${pageUrl || 'N/A'}`);
+    // Elementor requiere status 200 para mostrar mensaje de éxito verde
+    return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
     console.error('Webhook Error Detallado:', error);
