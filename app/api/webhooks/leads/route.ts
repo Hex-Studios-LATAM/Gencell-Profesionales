@@ -24,36 +24,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
-    // ── 2. Parsear body según content-type ───────────────────────────
-    const contentType = req.headers.get('content-type') || '';
-    let body: Record<string, string> = {};
+    // ── 2. Parsear body de forma extra robusta ───────────────────────
+    const rawText = await req.text();
+    let data: Record<string, string> = {};
 
-    if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
-      const formData = await req.formData();
-      formData.forEach((value, key) => {
-        if (typeof value === 'string') {
-          body[key] = value;
-        }
-      });
-    } else {
-      // Intentar JSON (default)
+    if (rawText.trim().startsWith('{')) {
       try {
-        body = await req.json();
-      } catch {
-        return NextResponse.json(
-          { error: 'No se pudo parsear el body. Envía JSON o FormData.' },
-          { status: 400 }
-        );
+        data = JSON.parse(rawText);
+      } catch (e) {
+        // Fallback silently
       }
     }
 
-    console.log('[Webhook Leads] Body recibido:', JSON.stringify(body));
+    if (Object.keys(data).length === 0) {
+      const params = new URLSearchParams(rawText);
+      data = Object.fromEntries(params.entries());
+    }
 
-    // ── 3. Extraer campos (mapeo flexible español/inglés) ────────────
-    const nombre   = (body.nombre || body.name || body.full_name || '').trim();
-    const cedula   = (body.cedula || body.cedula_profesional || body.license || '').trim();
-    const email    = (body.email || body.correo || '').trim();
-    const telefono = (body.telefono || body.phone || body.tel || body.whatsapp || '').trim();
+    // ── 3. Extraer campos (mapeo flexible español/inglés/mayus) ──────
+    const nombre   = (data.nombre || data.Nombre || data['Nombre '] || data.name || data.full_name || '').trim();
+    const cedula   = (data.cedula || data.Cedula || data['Cédula Profesional'] || data.cedula_profesional || data.license || '').trim();
+    const email    = (data.email || data.Email || data['Correo Electrónico'] || data.correo || '').trim();
+    const telefono = (data.telefono || data.Telefono || data['Teléfono'] || data.phone || data.tel || data.whatsapp || '').trim();
+
+    console.log("Datos extraídos:", { nombre, cedula, email, telefono });
 
     // ── 4. Validar campos requeridos ─────────────────────────────────
     const missing: string[] = [];
