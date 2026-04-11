@@ -31,10 +31,17 @@ const rangoOptions = [
 ];
 
 export default function AdminLeadsPage() {
-  const [allLeads, setAllLeads]   = useState<Lead[]>([]);
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [totalCount, setTotalCount]   = useState(0);
+
+  // KPIs — fetched once without filters
+  const [kpiData, setKpiData] = useState({ total: 0, esteMes: 0, estaSemana: 0, nuevos: 0 });
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -45,7 +52,7 @@ export default function AdminLeadsPage() {
   const [startDate, setStartDate]       = useState("");
   const [endDate, setEndDate]           = useState("");
 
-  // Cierra menú de exportación al clickear afuera
+  // Close export menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
@@ -56,26 +63,52 @@ export default function AdminLeadsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch todos los leads para KPIs (sin filtros)
-  const fetchAllLeads = async () => {
+  // ── Fetch KPI data (no filters, no pagination) ────────────────
+  const fetchKPIs = async () => {
     try {
-      const res = await fetch("/api/leads");
-      if (res.ok) setAllLeads(await res.json());
+      const res = await fetch("/api/leads?limit=100000&page=1");
+      if (!res.ok) return;
+      const data = await res.json();
+      const allLeads: Lead[] = data.leads || [];
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const day = now.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+
+      setKpiData({
+        total: data.total || allLeads.length,
+        esteMes: allLeads.filter(l => new Date(l.createdAt) >= startOfMonth).length,
+        estaSemana: allLeads.filter(l => new Date(l.createdAt) >= startOfWeek).length,
+        nuevos: allLeads.filter(l => l.status === "NUEVO").length,
+      });
     } catch { /* silent */ }
   };
 
-  const fetchLeads = async () => {
+  // ── Fetch filtered + paginated leads ──────────────────────────
+  const fetchLeads = async (page = currentPage) => {
     setLoading(true);
+    setError("");
     try {
       const params = new URLSearchParams();
       if (filterStatus) params.set("status", filterStatus);
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
       if (!startDate && !endDate && filterRango) params.set("rango", filterRango);
-      
+      params.set("page", String(page));
+      params.set("limit", "10");
+
       const res = await fetch(`/api/leads?${params.toString()}`);
-      if (!res.ok) throw new Error("Error cargando leads");
-      setLeads(await res.json());
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Error cargando leads");
+      }
+
+      const data = await res.json();
+      setLeads(data.leads || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total || 0);
+      setCurrentPage(data.currentPage || 1);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -83,25 +116,21 @@ export default function AdminLeadsPage() {
     }
   };
 
-  useEffect(() => { fetchAllLeads(); }, []);
-  useEffect(() => { fetchLeads(); }, [filterStatus, filterRango, startDate, endDate]);
+  useEffect(() => { fetchKPIs(); }, []);
 
-  // ── KPIs calculados sobre allLeads ──────────────────────────────
-  const kpis = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+  // When filters change, reset to page 1
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchLeads(1);
+  }, [filterStatus, filterRango, startDate, endDate]);
 
-    const total = allLeads.length;
-    const esteMes = allLeads.filter(l => new Date(l.createdAt) >= startOfMonth).length;
-    const estaSemana = allLeads.filter(l => new Date(l.createdAt) >= startOfWeek).length;
-    const nuevos = allLeads.filter(l => l.status === "NUEVO").length;
+  const goToPage = (p: number) => {
+    if (p < 1 || p > totalPages) return;
+    setCurrentPage(p);
+    fetchLeads(p);
+  };
 
-    return { total, esteMes, estaSemana, nuevos };
-  }, [allLeads]);
-
+  // ── Actions ───────────────────────────────────────────────────
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       const res = await fetch(`/api/leads/${id}`, {
@@ -111,7 +140,7 @@ export default function AdminLeadsPage() {
       });
       if (!res.ok) throw new Error("Error al actualizar");
       fetchLeads();
-      fetchAllLeads();
+      fetchKPIs();
     } catch {
       alert("Error al actualizar estatus");
     }
@@ -123,21 +152,22 @@ export default function AdminLeadsPage() {
       const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar");
       fetchLeads();
-      fetchAllLeads();
+      fetchKPIs();
     } catch {
       alert("Error al eliminar");
     }
   };
 
-  // ── Exportar CSV ────────────────────────────────────────────────
+  // ── CSV Export ─────────────────────────────────────────────────
   const generateCSV = (dataList: any[], filenameParam: string) => {
-    const headers = ["Nombre", "Cédula", "Correo", "Teléfono", "Origen", "Status", "Fecha de Registro"];
+    const headers = ["Nombre", "Cédula", "Correo", "Teléfono", "Origen", "Página", "Status", "Fecha de Registro"];
     const rows = dataList.map(l => [
       l.nombre,
       l.cedula || "",
       l.email,
       l.telefono || "",
       l.origin?.name || "",
+      l.pageUrl || "",
       statusOptions.find(s => s.value === l.status)?.label || l.status,
       new Date(l.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
     ]);
@@ -181,53 +211,42 @@ export default function AdminLeadsPage() {
   const getStatusStyle = (status: string) =>
     statusOptions.find(s => s.value === status)?.color || "bg-slate-100 text-slate-600 border-slate-200";
 
-  // ── KPI card data ───────────────────────────────────────────────
+  // ── KPI Cards ─────────────────────────────────────────────────
   const kpiCards = [
     {
-      label: "Total de Leads",
-      value: kpis.total,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-        </svg>
-      ),
-      accent: "text-slate-600 bg-slate-50 border-slate-200",
-      valueColor: "text-slate-900",
+      label: "Total de Leads", value: kpiData.total,
+      icon: (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>),
+      accent: "text-slate-600 bg-slate-50 border-slate-200", valueColor: "text-slate-900",
     },
     {
-      label: "Este Mes",
-      value: kpis.esteMes,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
-      ),
-      accent: "text-indigo-600 bg-indigo-50 border-indigo-200",
-      valueColor: "text-indigo-700",
+      label: "Este Mes", value: kpiData.esteMes,
+      icon: (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>),
+      accent: "text-indigo-600 bg-indigo-50 border-indigo-200", valueColor: "text-indigo-700",
     },
     {
-      label: "Esta Semana",
-      value: kpis.estaSemana,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-        </svg>
-      ),
-      accent: "text-sky-600 bg-sky-50 border-sky-200",
-      valueColor: "text-sky-700",
+      label: "Esta Semana", value: kpiData.estaSemana,
+      icon: (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>),
+      accent: "text-sky-600 bg-sky-50 border-sky-200", valueColor: "text-sky-700",
     },
     {
-      label: "Sin Contactar",
-      value: kpis.nuevos,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-        </svg>
-      ),
-      accent: "text-amber-600 bg-amber-50 border-amber-200",
-      valueColor: "text-amber-700",
+      label: "Sin Contactar", value: kpiData.nuevos,
+      icon: (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>),
+      accent: "text-amber-600 bg-amber-50 border-amber-200", valueColor: "text-amber-700",
     },
   ];
+
+  // ── Pagination helpers ────────────────────────────────────────
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }, [currentPage, totalPages]);
 
   return (
     <main className="p-8 max-w-[90rem] mx-auto">
@@ -244,7 +263,7 @@ export default function AdminLeadsPage() {
           </div>
           <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
             <span className="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse"></span>
-            {leads.length} resultado{leads.length !== 1 ? "s" : ""} filtrados
+            {totalCount} resultado{totalCount !== 1 ? "s" : ""}
           </div>
         </div>
       </div>
@@ -273,9 +292,7 @@ export default function AdminLeadsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider flex items-center gap-2">
-            Rápido <span className="text-[9px] font-medium opacity-60 normal-case">(Reescribe manual)</span>
-          </label>
+          <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Período</label>
           <select value={filterRango} onChange={e => { setFilterRango(e.target.value); setStartDate(""); setEndDate(""); }}
             className="border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium text-slate-700 bg-slate-50 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none w-36">
             {rangoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -299,7 +316,6 @@ export default function AdminLeadsPage() {
           </svg>
         </button>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
         {/* Dropdown Exportar CSV */}
@@ -318,7 +334,7 @@ export default function AdminLeadsPage() {
           </button>
 
           {exportMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg z-50 overflow-hidden text-sm font-medium text-slate-700 origin-top-right animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg z-50 overflow-hidden text-sm font-medium text-slate-700">
               <button onClick={exportFiltered} className="w-full text-left px-4 py-3 hover:bg-slate-50 transition border-b border-slate-50 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
                 Exportar Filtrados
@@ -337,13 +353,14 @@ export default function AdminLeadsPage() {
       {/* ── Tabla ───────────────────────────────────────────────────── */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+          <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Nombre</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Cédula</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Contacto</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Empresa (Origen)</th>
+                <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Página</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Fecha</th>
                 <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-widest w-[80px] text-right">Acc.</th>
@@ -351,9 +368,9 @@ export default function AdminLeadsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="p-10 text-center text-slate-500 font-medium">Cargando leads...</td></tr>
+                <tr><td colSpan={8} className="p-10 text-center text-slate-500 font-medium">Cargando leads...</td></tr>
               ) : leads.length === 0 ? (
-                <tr><td colSpan={7} className="p-14 text-center text-slate-400 font-medium">No hay leads registrados.</td></tr>
+                <tr><td colSpan={8} className="p-14 text-center text-slate-400 font-medium">No hay leads registrados.</td></tr>
               ) : (
                 leads.map(lead => (
                   <tr key={lead.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition">
@@ -371,12 +388,19 @@ export default function AdminLeadsPage() {
                       <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-200">
                         {lead.origin?.name || "—"}
                       </span>
-                      {lead.pageUrl && (
+                    </td>
+                    <td className="p-5">
+                      {lead.pageUrl ? (
                         <a href={lead.pageUrl} target="_blank" rel="noopener noreferrer"
-                          className="block text-[10px] font-medium text-indigo-400 hover:text-indigo-600 mt-1 truncate max-w-[180px] transition"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded transition border border-transparent hover:border-indigo-100"
                           title={lead.pageUrl}>
-                          ↗ Ver página
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                          </svg>
+                          Ver Página
                         </a>
+                      ) : (
+                        <span className="text-[11px] font-medium text-slate-400 px-2">—</span>
                       )}
                     </td>
                     <td className="p-5" onClick={e => e.stopPropagation()}>
@@ -406,6 +430,63 @@ export default function AdminLeadsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* ── Paginación ───────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-xs font-semibold text-slate-400">
+              Página {currentPage} de {totalPages} · {totalCount} leads totales
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="px-3 py-1.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+
+              {pageNumbers[0] > 1 && (
+                <>
+                  <button onClick={() => goToPage(1)}
+                    className="w-8 h-8 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                    1
+                  </button>
+                  {pageNumbers[0] > 2 && <span className="text-slate-300 text-xs px-1">…</span>}
+                </>
+              )}
+
+              {pageNumbers.map(p => (
+                <button key={p} onClick={() => goToPage(p)}
+                  className={`w-8 h-8 text-xs font-bold rounded-lg transition ${
+                    p === currentPage
+                      ? "bg-indigo-600 text-white border border-indigo-600 shadow-sm"
+                      : "text-slate-500 bg-white border border-slate-200 hover:bg-slate-50"
+                  }`}>
+                  {p}
+                </button>
+              ))}
+
+              {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                <>
+                  {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && <span className="text-slate-300 text-xs px-1">…</span>}
+                  <button onClick={() => goToPage(totalPages)}
+                    className="w-8 h-8 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                    {totalPages}
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="px-3 py-1.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Siguiente →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
