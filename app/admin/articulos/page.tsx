@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Editor } from "@tinymce/tinymce-react";
+import QuillEditor from "@/app/components/QuillEditor";
 
 type Article = {
   id: string;
@@ -301,38 +301,10 @@ export default function AdminArticulosPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contenido (Editor Visual)</label>
-              <div className="border rounded overflow-hidden shadow-sm">
-                 <Editor
-                   apiKey="jljswxin8d31mrxn7msku5gpgc57w2dlkk2rvy9ikzlbe0ht"
+              <div className="border border-slate-200 rounded overflow-hidden shadow-sm">
+                 <QuillEditor
                    value={formData.content}
-                   onEditorChange={(content) => setFormData({...formData, content})}
-                   init={{
-                     height: 600,
-                     menubar: true,
-                     plugins: [
-                       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                       'insertdatetime', 'media', 'table', 'code', 'wordcount'
-                     ],
-                     toolbar: 'undo redo | formatselect | ' +
-                       'bold italic underline | alignleft aligncenter ' +
-                       'alignright alignjustify | bullist numlist outdent indent | ' +
-                       'link image | table blockquote | insertCTA | removeformat | code fullscreen',
-                     setup: (editor) => {
-                       editor.ui.registry.addButton('insertCTA', {
-                         text: 'Botón CTA',
-                         tooltip: 'Inserta un botón con enlace',
-                         onAction: () => {
-                           const url = prompt('URL del enlace destino:', 'https://');
-                           const text = prompt('Texto del botón:', 'Leer más');
-                           if (url && text) {
-                              editor.insertContent(`&nbsp;<a href="${url}" class="inline-block bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition my-4 shadow-md no-underline" target="_blank" rel="noopener noreferrer">${text}</a>&nbsp;`);
-                           }
-                         }
-                       });
-                     },
-                     content_style: 'body { font-family:Inter,Helvetica,Arial,sans-serif; font-size:16px; color:#1f2937 } a.inline-block { display:inline-block; background-color:#2563eb; color:#ffffff; padding:0.75rem 2rem; border-radius:0.5rem; text-decoration:none; font-weight:600; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); } a.inline-block:hover { background-color:#1d4ed8; }'
-                   }}
+                   onChange={(content) => setFormData({...formData, content})}
                  />
               </div>
             </div>

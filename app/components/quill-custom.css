@@ -1,0 +1,16 @@
+.ql-container {
+  font-family: inherit;
+  font-size: 16px;
+}
+.ql-editor {
+  min-height: 18rem;
+}
+.ql-toolbar {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  background-color: #f8fafc;
+}
+.ql-container {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
