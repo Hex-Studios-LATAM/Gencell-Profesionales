@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = "admin@gencell.mx";
-  const password = "Password123!";
+  const email = "admin@gencellbiotechnology.com";
+  const password = "8ZyjYk7jtH78";
   
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
