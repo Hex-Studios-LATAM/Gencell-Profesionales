@@ -66,6 +66,14 @@ export async function POST(req: Request) {
       }
     }
     
+    // 2. Búsqueda exhaustiva de pageTitle si no está en llaves obvias
+    let pageTitle = (data.page_title || data.pageTitle || data.title || '').trim();
+    if (!pageTitle) {
+      const titleKey = Object.keys(data).find(key => key.toLowerCase().includes('title'));
+      if (titleKey) pageTitle = String(data[titleKey]).trim();
+    }
+    pageTitle = pageTitle || null;
+
     // 3. Fallback a headers
     if (!pageUrl) {
       pageUrl = (req.headers.get('referer') || req.headers.get('origin') || req.headers.get('x-forwarded-for-referrer') || '').trim();
@@ -73,7 +81,7 @@ export async function POST(req: Request) {
     
     pageUrl = pageUrl || '(URL no capturada)';
 
-    console.log("Datos extraídos:", { nombre, cedula, email, telefono, pageUrl });
+    console.log("Datos extraídos:", { nombre, cedula, email, telefono, pageTitle, pageUrl });
 
     // ── 4. Validar campos requeridos ─────────────────────────────────
     const missing: string[] = [];
@@ -97,11 +105,12 @@ export async function POST(req: Request) {
         email,
         telefono,
         pageUrl,
+        pageTitle,
         originId: origin.id,
       },
     });
 
-    console.log(`[Webhook Leads] Lead creado: ${lead.id} — ${email} — Origen: ${origin.name} — URL: ${pageUrl || 'N/A'}`);
+    console.log(`[Webhook Leads] Lead creado: ${lead.id} — ${email} — Origen: ${origin.name} — Title: ${pageTitle || 'N/A'}`);
     // Elementor requiere status 200 para mostrar mensaje de éxito verde
     return NextResponse.json({ success: true }, { status: 200 });
 

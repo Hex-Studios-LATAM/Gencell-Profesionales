@@ -10,6 +10,7 @@ type Lead = {
   email: string;
   telefono: string;
   pageUrl?: string;
+  pageTitle?: string;
   status: string;
   createdAt: string;
   origin: { id: string; name: string };
@@ -167,7 +168,7 @@ export default function AdminLeadsPage() {
       l.email,
       l.telefono || "",
       l.origin?.name || "",
-      l.pageUrl || "",
+      l.pageTitle || "",
       statusOptions.find(s => s.value === l.status)?.label || l.status,
       new Date(l.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
     ]);
@@ -390,15 +391,10 @@ export default function AdminLeadsPage() {
                       </span>
                     </td>
                     <td className="p-5">
-                      {lead.pageUrl ? (
-                        <a href={lead.pageUrl} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded transition border border-transparent hover:border-indigo-100"
-                          title={lead.pageUrl}>
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                          </svg>
-                          Ver Página
-                        </a>
+                      {lead.pageTitle ? (
+                        <span className="text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200/60 px-2 py-1 rounded-md max-w-[200px] truncate block" title={lead.pageTitle}>
+                          {lead.pageTitle}
+                        </span>
                       ) : (
                         <span className="text-[11px] font-medium text-slate-400 px-2">—</span>
                       )}

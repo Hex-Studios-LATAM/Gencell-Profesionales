@@ -199,6 +199,7 @@ model Lead {
   email     String
   telefono  String
   pageUrl   String?
+  pageTitle String?
   status    LeadStatus @default(NUEVO)
   originId  String
   origin    LeadOrigin @relation(fields: [originId], references: [id])
