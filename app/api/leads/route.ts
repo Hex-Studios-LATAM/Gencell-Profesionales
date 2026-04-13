@@ -81,3 +81,42 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error?.message || 'Error interno' }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const data = await req.json();
+    const session = await auth();
+
+    // Buscar origin de la plataforma, si no existe lo creamos
+    let origin = await prisma.leadOrigin.findFirst({
+      where: { name: "Gencell Platform" }
+    });
+
+    if (!origin) {
+      origin = await prisma.leadOrigin.create({
+        data: {
+          name: "Gencell Platform",
+          token: "gencell_internal_token_" + Date.now().toString(),
+          domain: "gencell.com"
+        }
+      });
+    }
+
+    const lead = await prisma.lead.create({
+      data: {
+        nombre: data.name || session?.user?.name || "Desconocido",
+        cedula: session?.user?.professionalLicense || "N/A",
+        email: data.email || session?.user?.email || "N/A",
+        telefono: data.phone || data.telefono || "N/A",
+        pageUrl: data.sourceType || "N/A",
+        pageTitle: `[${data.intent || 'GENERAL'}] ${data.sourceLabel || ''} ${data.message ? `- Msj: ${data.message}` : ''}`.substring(0, 190),
+        originId: origin.id,
+      }
+    });
+
+    return NextResponse.json({ success: true, message: "Solicitud enviada correctamente", leadId: lead.id });
+  } catch (error: any) {
+    console.error("Error creating Lead:", error);
+    return NextResponse.json({ success: false, message: "No fue posible enviar la solicitud", error: error.message }, { status: 500 });
+  }
+}

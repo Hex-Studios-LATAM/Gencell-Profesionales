@@ -49,11 +49,22 @@ export default function LeadCTA({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, sourceType, sourceId, sourceLabel }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al enviar");
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+         data = await res.json();
+      } else {
+         await res.text(); // consume body but ignore
+         throw new Error("El servicio no respondió correctamente. Intente nuevamente.");
+      }
+
+      if (!res.ok || data.success === false) {
+         throw new Error(data.message || data.error || "Error al enviar la solicitud.");
+      }
+      
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "No pudimos procesar la solicitud. Intente nuevamente.");
     } finally {
       setLoading(false);
     }
