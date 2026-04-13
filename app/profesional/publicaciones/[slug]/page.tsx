@@ -8,7 +8,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
   
   const article = await prisma.article.findUnique({
     where: { slug },
-    include: { category: true }
+    include: { categories: true }
   });
 
   if (!article || article.status !== "PUBLISHED") {
@@ -47,9 +47,15 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                 Regresar
               </Link>
               <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div>
-              <span className="inline-flex items-center px-3 py-1 bg-sky-50 text-sky-700 text-xs font-bold rounded-md uppercase tracking-widest border border-sky-100/50">
-                 {article.category?.name}
-              </span>
+              {article.categories && article.categories.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {article.categories.map(c => (
+                    <span key={c.id} className="inline-flex items-center px-3 py-1 bg-sky-50 text-sky-700 text-xs font-bold rounded-md uppercase tracking-widest border border-sky-100/50">
+                       {c.name}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div>
               <span className="text-sm font-semibold text-slate-500 uppercase tracking-widest">
                  {new Date(article.createdAt).toLocaleDateString()}

@@ -23,7 +23,7 @@ export default async function NoticiasPage() {
         },
       ],
     },
-    include: { category: true },
+    include: { categories: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -100,9 +100,9 @@ export default async function NoticiasPage() {
                       <span className="inline-flex items-center px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded uppercase tracking-wider border border-amber-200/60">
                         Destacada
                       </span>
-                      {featured.category && (
+                      {featured.categories && featured.categories.length > 0 && (
                         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                          {featured.category.name}
+                          {featured.categories.map((c: any) => c.name).join(", ")}
                         </span>
                       )}
                       <span className="text-[10px] text-slate-400">
@@ -154,9 +154,9 @@ export default async function NoticiasPage() {
                       {/* Contenido */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          {article.category && (
+                          {article.categories && article.categories.length > 0 && (
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              {article.category.name}
+                              {article.categories.map((c: any) => c.name).join(", ")}
                             </span>
                           )}
                           <span className="text-[10px] text-slate-300">·</span>

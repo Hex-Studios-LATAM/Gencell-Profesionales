@@ -37,7 +37,7 @@ export default async function PublicacionesPage({
         },
       ],
     },
-    include: { category: true },
+    include: { categories: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -156,9 +156,9 @@ export default async function PublicacionesPage({
                       {/* Contenido */}
                       <div className="p-6 flex-1 flex flex-col">
                         <div className="flex items-center gap-2 mb-2">
-                          {article.category && (
+                          {article.categories && article.categories.length > 0 && (
                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                              {article.category.name}
+                              {article.categories.map((c: any) => c.name).join(", ")}
                             </span>
                           )}
                           <span className="text-[10px] text-slate-300">·</span>

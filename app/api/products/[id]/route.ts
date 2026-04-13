@@ -8,8 +8,8 @@ import path from 'path';
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').optional(),
   slug: z.string().optional(),
-  categoryId: z.string().min(1, 'La categoría es obligatoria').optional(),
-  description: z.string().min(1, 'La descripción es obligatoria').optional(),
+  categoryIds: z.array(z.string()).min(1, 'La categoría es obligatoria').optional(),
+  description: z.string().optional(),
   imageUrl: z.string().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
   specialtyIds: z.array(z.string()).optional()
@@ -30,13 +30,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     let product = await prisma.product.findUnique({
       where: { id },
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     if (!product) {
       product = await prisma.product.findUnique({
         where: { slug: id },
-        include: { category: true, specialties: { include: { specialty: true } } }
+        include: { categories: true, specialties: { include: { specialty: true } } }
       });
     }
 
@@ -69,8 +69,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const data = result.data;
     const updateData: any = { ...data };
-    // Prevent updating specialties directly via root update object
+    // Prevent updating nested relationships directly via root update object
     delete updateData.specialtyIds;
+    delete updateData.categoryIds;
+
+    if (data.categoryIds) {
+       updateData.categories = {
+         set: data.categoryIds.map((id: string) => ({ id }))
+       };
+    }
 
     if (data.slug) {
        updateData.slug = generateSlug(data.slug);
@@ -96,7 +103,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const product = await prisma.product.update({
       where: { id },
       data: updateData,
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     if (data.imageUrl !== undefined && data.imageUrl !== existingProduct.imageUrl && existingProduct.imageUrl?.startsWith('/uploads/')) {

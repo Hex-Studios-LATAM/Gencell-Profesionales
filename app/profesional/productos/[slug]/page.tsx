@@ -11,7 +11,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const product = await prisma.product.findUnique({
     where: { slug },
     include: {
-      category: true,
+      categories: true,
       specialties: { include: { specialty: true } }
     }
   });
@@ -43,10 +43,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
         <div className="lg:col-span-6 flex flex-col h-full py-4 lg:py-8 lg:sticky lg:top-32 gap-8">
           <div>
-            <div className="mb-6">
-              <span className="inline-flex items-center px-3.5 py-1.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-lg uppercase tracking-widest border border-indigo-100/50 shadow-sm">
-                {product.category?.name}
-              </span>
+            <div className="mb-6 flex flex-wrap gap-2">
+              {product.categories.length > 0 ? (
+                 product.categories.map(c => (
+                    <span key={c.id} className="inline-flex items-center px-3.5 py-1.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-lg uppercase tracking-widest border border-indigo-100/50 shadow-sm">
+                      {c.name}
+                    </span>
+                 ))
+              ) : (
+                 <span className="inline-flex items-center px-3.5 py-1.5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg uppercase tracking-widest border border-slate-200 shadow-sm">
+                    Sin Categoría
+                 </span>
+              )}
             </div>
 
             <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 leading-tight tracking-tight">

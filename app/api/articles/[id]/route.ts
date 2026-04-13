@@ -8,7 +8,7 @@ import path from 'path';
 const articleSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio').optional(),
   slug: z.string().optional(),
-  categoryId: z.string().min(1, 'La categoría es obligatoria').optional(),
+  categoryIds: z.array(z.string()).min(1, 'La categoría es obligatoria').optional(),
   content: z.string().min(1, 'El contenido es obligatorio').optional(),
   excerpt: z.string().optional(),
   imageUrl: z.string().optional(),
@@ -34,13 +34,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Intentar buscar por id, si falla intentar por slug
     let article = await prisma.article.findUnique({
       where: { id },
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     if (!article) {
       article = await prisma.article.findUnique({
         where: { slug: id },
-        include: { category: true, specialties: { include: { specialty: true } } }
+        include: { categories: true, specialties: { include: { specialty: true } } }
       });
     }
 
@@ -74,6 +74,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const data = result.data;
     const updateData: any = { ...data };
     delete updateData.specialtyIds;
+    delete updateData.categoryIds;
+
+    if (data.categoryIds) {
+       updateData.categories = {
+         set: data.categoryIds.map((id: string) => ({ id }))
+       };
+    }
 
     if (data.slug) {
        updateData.slug = generateSlug(data.slug);
@@ -109,7 +116,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const article = await prisma.article.update({
       where: { id },
       data: updateData,
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     if (data.imageUrl !== undefined && data.imageUrl !== existingArticle.imageUrl && existingArticle.imageUrl?.startsWith('/uploads/')) {

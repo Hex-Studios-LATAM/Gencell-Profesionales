@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 const articleSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
   slug: z.string().optional(),
-  categoryId: z.string().min(1, 'La categoría es obligatoria'),
+  categoryIds: z.array(z.string()).min(1, 'Debes seleccionar al menos una categoría'),
   content: z.string().min(1, 'El contenido es obligatorio'),
   excerpt: z.string().optional(),
   imageUrl: z.string().optional(),
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     
     const where: any = {};
     if (status) where.status = status;
-    if (categoryId) where.categoryId = categoryId;
+    if (categoryId) where.categories = { some: { id: categoryId } };
     const contentType = searchParams.get('contentType');
     if (contentType) where.contentType = contentType;
 
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 
     const articles = await prisma.article.findMany({
       where,
-      include: { category: true, author: { select: { name: true, email: true } } },
+      include: { categories: true, author: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -83,7 +83,6 @@ export async function POST(req: Request) {
       data: {
         title: data.title,
         slug: finalSlug,
-        categoryId: data.categoryId,
         content: data.content,
         excerpt: data.excerpt || null,
         imageUrl: data.imageUrl || null,
@@ -91,11 +90,14 @@ export async function POST(req: Request) {
         status: data.status,
         audienceType: data.audienceType,
         authorId: session.user.id,
+        categories: {
+          connect: data.categoryIds.map((id: string) => ({ id }))
+        },
         specialties: data.audienceType === 'BY_SPECIALTY' && data.specialtyIds ? {
           create: data.specialtyIds.map(id => ({ specialtyId: id }))
         } : undefined
       },
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     return NextResponse.json(article, { status: 201 });

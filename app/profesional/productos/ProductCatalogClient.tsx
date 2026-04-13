@@ -21,8 +21,7 @@ type Product = {
   slug: string;
   description: string;
   imageUrl: string | null;
-  category: Category | null;
-  categoryId: string;
+  categories: Category[];
   specialties: ProductSpecialty[];
 };
 
@@ -44,7 +43,7 @@ export default function ProductCatalogClient({
 
   const filtered = useMemo(() => {
     if (!activeCategoryId) return products;
-    return products.filter((p) => p.categoryId === activeCategoryId);
+    return products.filter((p) => p.categories.some(c => c.id === activeCategoryId));
   }, [products, activeCategoryId]);
 
   return (
@@ -98,7 +97,7 @@ export default function ProductCatalogClient({
             {/* Category pills */}
             {categories.map((cat) => {
               const count = products.filter(
-                (p) => p.categoryId === cat.id
+                (p) => p.categories.some(c => c.id === cat.id)
               ).length;
               const isActive = activeCategoryId === cat.id;
               return (
@@ -216,11 +215,15 @@ export default function ProductCatalogClient({
                   </div>
                 )}
 
-                {/* Category badge overlay */}
-                {prod.category && (
-                  <span className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 bg-white/90 backdrop-blur-sm border border-slate-100/80 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
-                    {prod.category.name}
-                  </span>
+                {/* Category badges overlay */}
+                {prod.categories.length > 0 && (
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[80%] pointer-events-none">
+                     {prod.categories.map(cat => (
+                        <span key={cat.id} className="inline-flex items-center px-2.5 py-1 bg-white/90 backdrop-blur-sm border border-slate-100/80 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
+                          {cat.name}
+                        </span>
+                     ))}
+                  </div>
                 )}
               </div>
 

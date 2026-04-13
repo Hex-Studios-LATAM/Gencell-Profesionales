@@ -10,7 +10,7 @@ export default async function CatalogoComercialPage() {
   const products = await prisma.product.findMany({
     where: { status: "PUBLISHED" },
     include: {
-      category: true,
+      categories: true,
       specialties: { include: { specialty: true } },
     },
     orderBy: { createdAt: "desc" },

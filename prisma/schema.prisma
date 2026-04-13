@@ -141,8 +141,7 @@ model Article {
   contentType  ContentType      @default(ARTICLE)
   status       Status           @default(DRAFT)
   audienceType AudienceType     @default(ALL_DOCTORS)
-  categoryId   String
-  category     ArticleCategory  @relation(fields: [categoryId], references: [id])
+  categories   ArticleCategory[]
   authorId     String?
   author       User?            @relation(fields: [authorId], references: [id])
   createdAt    DateTime         @default(now())
@@ -154,11 +153,10 @@ model Product {
   id          String             @id @default(uuid())
   name        String
   slug        String             @unique
-  description String             @db.Text
+  description String?            @db.Text
   imageUrl    String?
   status      Status             @default(DRAFT)
-  categoryId  String
-  category    ProductCategory    @relation(fields: [categoryId], references: [id])
+  categories  ProductCategory[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   specialties ProductSpecialty[]

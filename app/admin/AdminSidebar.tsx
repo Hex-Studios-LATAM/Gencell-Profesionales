@@ -77,6 +77,10 @@ export default function AdminSidebar({ user }: { user: { name?: string | null, e
               <svg className={iconClass("/admin/productos")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
               Productos
             </Link>
+            <Link href="/admin/productos/importar" className={navItemClass("/admin/productos/importar")}>
+              <svg className={iconClass("/admin/productos/importar")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              Importar Productos
+            </Link>
             <Link href="/admin/categorias/productos" className={navItemClass("/admin/categorias/productos")}>
               <svg className={iconClass("/admin/categorias/productos")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               Cat. Productos

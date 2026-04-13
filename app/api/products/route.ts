@@ -6,8 +6,8 @@ import { auth } from '@/auth';
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
   slug: z.string().optional(),
-  categoryId: z.string().min(1, 'La categoría es obligatoria'),
-  description: z.string().min(1, 'La descripción es obligatoria'),
+  categoryIds: z.array(z.string()).min(1, 'Debes seleccionar al menos una categoría'),
+  description: z.string().optional(),
   imageUrl: z.string().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
   specialtyIds: z.array(z.string()).optional() // IDs of specialties to map
@@ -31,12 +31,12 @@ export async function GET(req: Request) {
     
     const where: any = {};
     if (status) where.status = status;
-    if (categoryId) where.categoryId = categoryId;
+    if (categoryId) where.categories = { some: { id: categoryId } };
 
     const products = await prisma.product.findMany({
       where,
       include: { 
-        category: true,
+        categories: true,
         specialties: { include: { specialty: true } }
       },
       orderBy: { createdAt: 'desc' }
@@ -74,15 +74,17 @@ export async function POST(req: Request) {
       data: {
         name: data.name,
         slug: finalSlug,
-        categoryId: data.categoryId,
-        description: data.description,
+        description: data.description || '',
         imageUrl: data.imageUrl || null,
         status: data.status,
+        categories: {
+           connect: data.categoryIds.map((id: string) => ({ id }))
+        },
         specialties: data.specialtyIds ? {
            create: data.specialtyIds.map(id => ({ specialtyId: id }))
         } : undefined
       },
-      include: { category: true, specialties: { include: { specialty: true } } }
+      include: { categories: true, specialties: { include: { specialty: true } } }
     });
 
     return NextResponse.json(product, { status: 201 });
